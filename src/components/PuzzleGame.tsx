@@ -929,63 +929,91 @@ const PuzzleGame = () => {
         )}
 
         {/* Dialog de Parabéns */}
-        <Dialog open={showCongratulations} onOpenChange={setShowCongratulations}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle className="text-3xl font-bold text-center text-primary">
-                🎉 Parabéns, {progress.playerName}! 🎉
-              </DialogTitle>
-              <DialogDescription className="text-center space-y-4">
-                <div className="text-xl font-semibold">
-                  Você completou {currentPuzzle.title}!
-                </div>
-                
-                <div className="flex justify-center gap-2">
-                  {[...Array(3)].map((_, i) => (
-                    <Star 
-                      key={i} 
-                      className={`h-12 w-12 ${i < earnedStars ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`}
-                    />
-                  ))}
-                </div>
+       <Dialog open={showCongratulations} onOpenChange={setShowCongratulations}>
+  <DialogContent className="max-w-[95vw] w-full sm:max-w-lg mx-2">
+    <DialogHeader>
+      <DialogTitle className="text-lg sm:text-2xl text-center flex items-center justify-center gap-2">
+        <span>🎉</span>
+        <span>Parabéns, {progress.playerName}!</span>
+      </DialogTitle>
+    </DialogHeader>
+    
+    <div className="space-y-3 max-h-[70vh] overflow-y-auto">
+      {/* Texto de conclusão */}
+      <p className="text-center text-sm sm:text-base text-gray-600">
+        Você completou {currentPuzzle.title}!
+      </p>
 
-                <div className="bg-gradient-to-r from-primary/5 to-accent/5 p-6 rounded-lg">
-                  <p className="text-sm font-medium text-primary mb-2">
-                    ✨ Versículo para Meditar:
-                  </p>
-                  <p className="text-base italic">
-                    "{currentPuzzle.verse}"
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-2 text-right">
-                    - {currentPuzzle.reference}
-                  </p>
-                </div>
+      {/* Estrelas */}
+      <div className="flex justify-center gap-1">
+        {[...Array(3)].map((_, i) => (
+          <Star 
+            key={i} 
+            className={`h-8 w-8 sm:h-10 sm:w-10 ${
+              i < earnedStars 
+                ? 'text-yellow-500 fill-yellow-500' 
+                : 'text-gray-300'
+            }`}
+          />
+        ))}
+      </div>
 
-                <div className="bg-muted/50 p-4 rounded-lg">
-                  <p className="text-sm">
-                    <strong>Para os pais:</strong> Converse com seu filho sobre esta história!
-                  </p>
-                </div>
+      {/* Versículo - MENOR NO MOBILE */}
+      <Card className="p-3 bg-blue-50">
+        <p className="text-xs sm:text-sm font-medium text-blue-600 mb-1">
+          ✨ Versículo para Meditar:
+        </p>
+        <p className="text-xs sm:text-sm italic text-center">
+          "{currentPuzzle.verse}"
+        </p>
+        <p className="text-xs text-center mt-1 text-gray-600">
+          - {currentPuzzle.reference}
+        </p>
+      </Card>
 
-                <div className="flex gap-3 justify-center pt-4">
-                  <Button onClick={() => setShowCongratulations(false)} variant="outline">
-                    Fechar
-                  </Button>
-                  <Button onClick={resetGame} variant="outline">
-                    <RotateCcw className="mr-2 h-4 w-4" />
-                    Jogar Novamente
-                  </Button>
-                  {currentPuzzleIndex < puzzleImages.length - 1 && (
-                    <Button onClick={goToNextPuzzle} className="bg-primary">
-                      Próxima História
-                      <ChevronRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </DialogDescription>
-            </DialogHeader>
-          </DialogContent>
-        </Dialog>
+      {/* Dica para pais - OPCIONAL, ESCONDIDA NO MOBILE */}
+      <div className="hidden sm:block bg-gray-50 p-2 rounded text-xs">
+        <strong>Para os pais:</strong> Converse com seu filho sobre esta história!
+      </div>
+
+      {/* Botões - LAYOUT MOBILE */}
+      <div className="grid gap-2 pt-2">
+        {/* Próxima História - PRINCIPAL */}
+        {currentPuzzleIndex < puzzleImages.length - 1 && (
+          <Button 
+            onClick={goToNextPuzzle}
+            className="w-full bg-green-500 hover:bg-green-600 text-white"
+            size="lg"
+          >
+            Próxima História →
+          </Button>
+        )}
+        
+        {/* Jogar Novamente */}
+        <Button 
+          onClick={resetGame}
+          variant="outline"
+          className="w-full"
+        >
+          <RotateCcw className="mr-2 h-4 w-4" />
+          Jogar Novamente
+        </Button>
+        
+        {/* Menu - SEMPRE VISÍVEL */}
+        <Button 
+          onClick={() => {
+            setShowCongratulations(false);
+            goToPuzzleSelection();
+          }}
+          variant="ghost"
+          className="w-full"
+        >
+          ← Menu Principal
+        </Button>
+      </div>
+    </div>
+  </DialogContent>
+</Dialog>
 
         {/* Dialog Final */}
         <Dialog open={showNextPuzzleDialog} onOpenChange={setShowNextPuzzleDialog}>
