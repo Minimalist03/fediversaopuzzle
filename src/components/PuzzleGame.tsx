@@ -52,7 +52,8 @@ const PuzzleGame = () => {
   const [moves, setMoves] = useState(0);
   const [earnedStars, setEarnedStars] = useState(0);
   const [showWelcome, setShowWelcome] = useState(!progress.playerName);
-  const [showParentDashboard, setShowParentDashboard] = useState(false);  
+  const [showParentDashboard, setShowParentDashboard] = useState(false);
+  
   // Sons
   const { playSuccessSound, playPieceDropSound, playCompletionSound } = useSoundEffects();
 
@@ -89,59 +90,31 @@ const PuzzleGame = () => {
   }, [gameStarted, isComplete, startTime]);
 
   // Tamanhos otimizados por dispositivo
-// Tamanhos otimizados por dispositivo
-const getPieceSize = () => {
-  const width = window.innerWidth;
-  const height = window.innerHeight;
-  
-  if (width <= 480) {
-    // Mobile: calcula para caber 2 grids 3x3 na tela
-    const padding = 48;
-    const gaps = 16;
-    const extraSpace = 250; // header, textos, botões
+  const getPieceSize = () => {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
     
-    const maxWidth = Math.floor((width - padding - gaps) / 3.2);
-    const maxHeight = Math.floor((height - extraSpace) / 6.5);
-    const optimalSize = Math.min(maxWidth, maxHeight);
+    if (width <= 480) {
+      // Mobile: calcula para caber 2 grids 3x3 na tela
+      const padding = 48;
+      const gaps = 16;
+      const extraSpace = 250; // header, textos, botões
+      
+      const maxWidth = Math.floor((width - padding - gaps) / 3.2);
+      const maxHeight = Math.floor((height - extraSpace) / 6.5);
+      const optimalSize = Math.min(maxWidth, maxHeight);
+      
+      if (width <= 360) return Math.max(65, Math.min(70, optimalSize));
+      if (width <= 375) return Math.max(68, Math.min(73, optimalSize));
+      if (width <= 414) return Math.max(72, Math.min(78, optimalSize));
+      return Math.max(75, Math.min(82, optimalSize));
+    }
     
-    if (width <= 360) return Math.max(65, Math.min(70, optimalSize));
-    if (width <= 375) return Math.max(68, Math.min(73, optimalSize));
-    if (width <= 414) return Math.max(72, Math.min(78, optimalSize));
-    return Math.max(75, Math.min(82, optimalSize));
-  }
-  
-  if (width < 768) return 90;
-  return 100;
-};
-  
-  // Para mobile, calcular baseado no espaço disponível
-  if (width <= 480) {
-    // Considera que precisa caber tabuleiro + peças na mesma tela
-    const availableWidth = width - 40; // 20px padding de cada lado
-    const availableHeight = height - 280; // header, controles e peças
-    
-    // Usa a menor dimensão para garantir que caiba
-    const maxFromWidth = Math.floor(availableWidth / 3.5);
-    const maxFromHeight = Math.floor(availableHeight / 3.5);
-    const optimalSize = Math.min(maxFromWidth, maxFromHeight);
-    
-    // Limites por largura de tela
-    if (width <= 360) return Math.min(70, optimalSize);
-    if (width <= 375) return Math.min(75, optimalSize);
-    if (width <= 414) return Math.min(80, optimalSize);
-    return Math.min(85, optimalSize);
-  }
-  
-  // Tablet
-  if (width < 768) {
-    return 95;
-  }
-  
-  // Desktop
-  return 110;
-};
+    if (width < 768) return 90;
+    return 100;
+  };
 
-const pieceSize = getPieceSize();
+  const pieceSize = getPieceSize();
 
   // Formatar tempo
   const formatTime = (seconds: number) => {
@@ -176,7 +149,6 @@ const pieceSize = getPieceSize();
     setStartTime(Date.now());
     setElapsedTime(0);
     setMoves(0);
-    // Removido toast daqui
   }, [currentPuzzle]);
 
   // Verifica se o quebra-cabeça está completo
@@ -293,7 +265,6 @@ const pieceSize = getPieceSize();
     );
 
     if (existingPiece) {
-      // Removido toast - apenas retorna
       return;
     }
 
@@ -690,245 +661,204 @@ const pieceSize = getPieceSize();
           </div>
         </div>
 
-   {/* Área do jogo - TODAS AS PEÇAS VISÍVEIS */}
-<div className="space-y-2">
-  {/* Tabuleiro */}
-  <Card className="p-2 mx-auto max-w-fit">
-    <h2 className="text-sm font-semibold text-center mb-2 text-primary">
-      Monte aqui! 🧩
-    </h2>
-    <div className="bg-yellow-50 p-2 rounded-lg">
-      <div className="grid grid-cols-3 gap-1">
-        {Array.from({ length: GRID_SIZE }, (_, row) =>
-          Array.from({ length: GRID_SIZE }, (_, col) =>
-            renderPuzzleSlot(row, col)
-          )
+        {/* Área do jogo - TODAS AS PEÇAS VISÍVEIS */}
+        <div className="space-y-2">
+          {/* Tabuleiro */}
+          <Card className="p-2 mx-auto max-w-fit">
+            <h2 className="text-sm font-semibold text-center mb-2 text-primary">
+              Monte aqui! 🧩
+            </h2>
+            <div className="bg-yellow-50 p-2 rounded-lg">
+              <div className="grid grid-cols-3 gap-1">
+                {Array.from({ length: GRID_SIZE }, (_, row) =>
+                  Array.from({ length: GRID_SIZE }, (_, col) =>
+                    renderPuzzleSlot(row, col)
+                  )
+                )}
+              </div>
+            </div>
+          </Card>
+
+          {/* Peças - SEMPRE GRID 3x3 */}
+          <Card className="p-2 mx-auto max-w-fit">
+            <h3 className="text-xs font-semibold text-center mb-2 text-primary">
+              Peças disponíveis ({pieces.filter(p => !p.isPlaced).length})
+            </h3>
+            <div className="bg-gray-50 rounded-lg p-2">
+              <div className="grid grid-cols-3 gap-1">
+                {pieces.filter(p => !p.isPlaced).map(piece => (
+                  <div key={piece.id} className="flex justify-center items-center">
+                    {renderPuzzlePiece(piece)}
+                  </div>
+                ))}
+                
+                {/* Espaços vazios quando peças são usadas */}
+                {[...Array(9 - pieces.filter(p => !p.isPlaced).length)].map((_, i) => (
+                  <div 
+                    key={`empty-${i}`} 
+                    className="border-2 border-dashed border-gray-200 rounded-lg"
+                    style={{ width: `${pieceSize}px`, height: `${pieceSize}px` }}
+                  />
+                ))}
+              </div>
+              
+              {pieces.filter(p => !p.isPlaced).length === 0 && (
+                <div className="text-center py-2 text-gray-500">
+                  <p className="text-xs">✅ Todas as peças foram colocadas!</p>
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
+
+        {/* Controles */}
+        <div className="text-center mt-4 space-y-3">
+          <div className="flex justify-center gap-2">
+            <Button 
+              onClick={goToPuzzleSelection} 
+              variant="outline"
+              size="sm"
+            >
+              <Home className="mr-1 h-4 w-4" />
+              Menu
+            </Button>
+            <Button 
+              onClick={resetGame} 
+              variant="outline"
+              size="sm"
+            >
+              <RotateCcw className="mr-1 h-4 w-4" />
+              Reiniciar
+            </Button>
+          </div>
+          
+          {isComplete && (
+            <div className="mt-3 p-3 rounded-2xl bg-gradient-to-r from-green-500 to-green-600 text-white animate-pulse">
+              <p className="text-lg font-bold">
+                🎉 Parabéns! Puzzle Completo! 🎉
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Dialog de Parabéns */}
+        <Dialog open={showCongratulations} onOpenChange={setShowCongratulations}>
+          <DialogContent className="max-w-[90vw] sm:max-w-lg mx-auto my-4">
+            <DialogHeader className="pb-2">
+              <DialogTitle className="text-lg sm:text-2xl text-center">
+                🎉 Parabéns, {progress.playerName}!
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-3 max-h-[65vh] overflow-y-auto px-1">
+              <p className="text-center text-sm text-gray-600">
+                Você completou {currentPuzzle.title}!
+              </p>
+
+              <div className="flex justify-center gap-1">
+                {[...Array(3)].map((_, i) => (
+                  <Star 
+                    key={i} 
+                    className={`h-8 w-8 ${
+                      i < earnedStars 
+                        ? 'text-yellow-500 fill-yellow-500' 
+                        : 'text-gray-300'
+                    }`}
+                  />
+                ))}
+              </div>
+
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <p className="text-xs font-medium text-blue-600 mb-1">
+                  ✨ Versículo para Meditar:
+                </p>
+                <p className="text-xs italic text-center">
+                  "{currentPuzzle.verse}"
+                </p>
+                <p className="text-xs text-center mt-1 text-gray-500">
+                  - {currentPuzzle.reference}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-2 pt-3 border-t">
+              {currentPuzzleIndex < puzzleImages.length - 1 && (
+                <Button 
+                  onClick={goToNextPuzzle}
+                  className="w-full bg-green-500 hover:bg-green-600"
+                >
+                  Próxima História <ChevronRight className="ml-1 h-4 w-4" />
+                </Button>
+              )}
+              
+              <div className="grid grid-cols-2 gap-2">
+                <Button 
+                  onClick={resetGame}
+                  variant="outline"
+                  size="sm"
+                >
+                  <RotateCcw className="mr-1 h-3 w-3" />
+                  Repetir
+                </Button>
+                
+                <Button 
+                  onClick={() => {
+                    setShowCongratulations(false);
+                    goToPuzzleSelection();
+                  }}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Home className="mr-1 h-3 w-3" />
+                  Menu
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog Final */}
+        <Dialog open={showNextPuzzleDialog} onOpenChange={setShowNextPuzzleDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="text-3xl font-bold text-center text-primary">
+                🌟 Incrível! Você Completou Tudo! 🌟
+              </DialogTitle>
+              <DialogDescription className="text-center space-y-4">
+                <div className="text-xl font-semibold">
+                  Parabéns por completar todas as 10 histórias bíblicas!
+                </div>
+                <div className="bg-gradient-to-r from-yellow-100 to-yellow-200 p-6 rounded-lg">
+                  <Trophy className="h-16 w-16 mx-auto mb-3 text-yellow-600" />
+                  <p className="text-lg font-bold">Você é um verdadeiro campeão!</p>
+                  <p className="text-sm mt-2">Total de {progress.totalStars} estrelas conquistadas!</p>
+                </div>
+                <Button onClick={goToPuzzleSelection} className="w-full">
+                  <Home className="mr-2 h-4 w-4" />
+                  Voltar ao Início
+                </Button>
+              </DialogDescription>
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
+
+        {/* Preview de Drag para Mobile */}
+        {dragPreview && isMobile && (
+          <div
+            className="fixed pointer-events-none z-50 opacity-80 rounded-lg"
+            style={{
+              left: dragPreview.x - pieceSize / 2,
+              top: dragPreview.y - pieceSize / 2,
+              width: pieceSize,
+              height: pieceSize,
+              backgroundImage: `url(${currentPuzzle.image})`,
+              backgroundSize: `${pieceSize * GRID_SIZE}px ${pieceSize * GRID_SIZE}px`,
+              backgroundPosition: `-${dragPreview.piece.correctPosition.col * pieceSize}px -${dragPreview.piece.correctPosition.row * pieceSize}px`,
+              border: '2px solid hsl(var(--primary))',
+              boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+            }}
+          />
         )}
-      </div>
-    </div>
-  </Card>
-
-  {/* Peças - SEMPRE GRID 3x3 */}
-  <Card className="p-2 mx-auto max-w-fit">
-    <h3 className="text-xs font-semibold text-center mb-2 text-primary">
-      Peças disponíveis ({pieces.filter(p => !p.isPlaced).length})
-    </h3>
-    <div className="bg-gray-50 rounded-lg p-2">
-      <div className="grid grid-cols-3 gap-1">
-        {pieces.filter(p => !p.isPlaced).map(piece => (
-          <div key={piece.id} className="flex justify-center items-center">
-            {renderPuzzlePiece(piece)}
-          </div>
-        ))}
-        
-        {/* Espaços vazios quando peças são usadas */}
-        {[...Array(9 - pieces.filter(p => !p.isPlaced).length)].map((_, i) => (
-          <div 
-            key={`empty-${i}`} 
-            className="border-2 border-dashed border-gray-200 rounded-lg"
-            style={{ width: `${pieceSize}px`, height: `${pieceSize}px` }}
-          />
-        ))}
-      </div>
-      
-      {pieces.filter(p => !p.isPlaced).length === 0 && (
-        <div className="text-center py-2 text-gray-500">
-          <p className="text-xs">✅ Todas as peças foram colocadas!</p>
-        </div>
-      )}
-    </div>
-  </Card>
-</div>
-
-  {/* Peças - SEMPRE GRID 3x3 */}
-  <Card className="p-2 mx-auto max-w-fit">
-    <h3 className="text-xs font-semibold text-center mb-2 text-primary">
-      Peças disponíveis ({pieces.filter(p => !p.isPlaced).length})
-    </h3>
-    <div className="bg-gray-50 rounded-lg p-2">
-      <div className="grid grid-cols-3 gap-1">
-        {pieces.filter(p => !p.isPlaced).map(piece => (
-          <div key={piece.id} className="flex justify-center items-center">
-            {renderPuzzlePiece(piece)}
-          </div>
-        ))}
-        
-        {/* Espaços vazios quando peças são usadas */}
-        {[...Array(9 - pieces.filter(p => !p.isPlaced).length)].map((_, i) => (
-          <div 
-            key={`empty-${i}`} 
-            className="border-2 border-dashed border-gray-200 rounded-lg"
-            style={{ width: `${pieceSize}px`, height: `${pieceSize}px` }}
-          />
-        ))}
-      </div>
-      
-      {pieces.filter(p => !p.isPlaced).length === 0 && (
-        <div className="text-center py-2 text-gray-500">
-          <p className="text-xs">✅ Todas as peças foram colocadas!</p>
-        </div>
-      )}
-    </div>
-  </Card>
-</div>
-    
-    {/* Indicador de scroll no mobile */}
-    {isMobile && pieces.filter(p => !p.isPlaced).length > 3 && (
-      <p className="text-center text-xs text-gray-400 mt-1">
-        ← Deslize para ver mais →
-      </p>
-    )}
-  </Card>
-</div>
-
-{/* Controles */}
-<div className="text-center mt-4 space-y-3">
-  <div className="flex justify-center gap-2">
-    <Button 
-      onClick={goToPuzzleSelection} 
-      variant="outline"
-      size="sm"
-    >
-      <Home className="mr-1 h-4 w-4" />
-      Menu
-    </Button>
-    <Button 
-      onClick={resetGame} 
-      variant="outline"
-      size="sm"
-    >
-      <RotateCcw className="mr-1 h-4 w-4" />
-      Reiniciar
-    </Button>
-  </div>
-  
-  {isComplete && (
-    <div className="mt-3 p-3 rounded-2xl bg-gradient-to-r from-green-500 to-green-600 text-white animate-pulse">
-      <p className="text-lg font-bold">
-        🎉 Parabéns! Puzzle Completo! 🎉
-      </p>
-    </div>
-  )}
-</div>
-
-{/* Dialog de Parabéns */}
-<Dialog open={showCongratulations} onOpenChange={setShowCongratulations}>
-  <DialogContent className="max-w-[90vw] sm:max-w-lg mx-auto my-4">
-    <DialogHeader className="pb-2">
-      <DialogTitle className="text-lg sm:text-2xl text-center">
-        🎉 Parabéns, {progress.playerName}!
-      </DialogTitle>
-    </DialogHeader>
-    
-    <div className="space-y-3 max-h-[65vh] overflow-y-auto px-1">
-      <p className="text-center text-sm text-gray-600">
-        Você completou {currentPuzzle.title}!
-      </p>
-
-      <div className="flex justify-center gap-1">
-        {[...Array(3)].map((_, i) => (
-          <Star 
-            key={i} 
-            className={`h-8 w-8 ${
-              i < earnedStars 
-                ? 'text-yellow-500 fill-yellow-500' 
-                : 'text-gray-300'
-            }`}
-          />
-        ))}
-      </div>
-
-      <div className="p-3 bg-blue-50 rounded-lg">
-        <p className="text-xs font-medium text-blue-600 mb-1">
-          ✨ Versículo para Meditar:
-        </p>
-        <p className="text-xs italic text-center">
-          "{currentPuzzle.verse}"
-        </p>
-        <p className="text-xs text-center mt-1 text-gray-500">
-          - {currentPuzzle.reference}
-        </p>
-      </div>
-    </div>
-
-    <div className="grid gap-2 pt-3 border-t">
-      {currentPuzzleIndex < puzzleImages.length - 1 && (
-        <Button 
-          onClick={goToNextPuzzle}
-          className="w-full bg-green-500 hover:bg-green-600"
-        >
-          Próxima História <ChevronRight className="ml-1 h-4 w-4" />
-        </Button>
-      )}
-      
-      <div className="grid grid-cols-2 gap-2">
-        <Button 
-          onClick={resetGame}
-          variant="outline"
-          size="sm"
-        >
-          <RotateCcw className="mr-1 h-3 w-3" />
-          Repetir
-        </Button>
-        
-        <Button 
-          onClick={() => {
-            setShowCongratulations(false);
-            goToPuzzleSelection();
-          }}
-          variant="outline"
-          size="sm"
-        >
-          <Home className="mr-1 h-3 w-3" />
-          Menu
-        </Button>
-      </div>
-    </div>
-  </DialogContent>
-</Dialog>
-
-{/* Dialog Final */}
-<Dialog open={showNextPuzzleDialog} onOpenChange={setShowNextPuzzleDialog}>
-  <DialogContent>
-    <DialogHeader>
-      <DialogTitle className="text-3xl font-bold text-center text-primary">
-        🌟 Incrível! Você Completou Tudo! 🌟
-      </DialogTitle>
-      <DialogDescription className="text-center space-y-4">
-        <div className="text-xl font-semibold">
-          Parabéns por completar todas as 10 histórias bíblicas!
-        </div>
-        <div className="bg-gradient-to-r from-yellow-100 to-yellow-200 p-6 rounded-lg">
-          <Trophy className="h-16 w-16 mx-auto mb-3 text-yellow-600" />
-          <p className="text-lg font-bold">Você é um verdadeiro campeão!</p>
-          <p className="text-sm mt-2">Total de {progress.totalStars} estrelas conquistadas!</p>
-        </div>
-        <Button onClick={goToPuzzleSelection} className="w-full">
-          <Home className="mr-2 h-4 w-4" />
-          Voltar ao Início
-        </Button>
-      </DialogDescription>
-    </DialogHeader>
-  </DialogContent>
-</Dialog>
-
-{/* Preview de Drag para Mobile */}
-{dragPreview && isMobile && (
-  <div
-    className="fixed pointer-events-none z-50 opacity-80 rounded-lg"
-    style={{
-      left: dragPreview.x - pieceSize / 2,
-      top: dragPreview.y - pieceSize / 2,
-      width: pieceSize,
-      height: pieceSize,
-      backgroundImage: `url(${currentPuzzle.image})`,
-      backgroundSize: `${pieceSize * GRID_SIZE}px ${pieceSize * GRID_SIZE}px`,
-      backgroundPosition: `-${dragPreview.piece.correctPosition.col * pieceSize}px -${dragPreview.piece.correctPosition.row * pieceSize}px`,
-      border: '2px solid hsl(var(--primary))',
-      boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
-    }}
-  />
-)}
       </div>
     </div>
   );
