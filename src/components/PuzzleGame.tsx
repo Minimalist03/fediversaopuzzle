@@ -850,17 +850,34 @@ const PuzzleGame = () => {
           </Card>
 
           {/* Paleta de peças */}
-          <Card className="p-4 w-full lg:w-auto">
-            <h2 className="text-lg font-semibold text-center mb-4 text-primary">
-              Peças disponíveis 🎯
-            </h2>
-            <div className="grid grid-cols-3 gap-3 justify-items-center max-h-96 overflow-y-auto">
-              {pieces
-                .filter(piece => !piece.isPlaced)
-                .map(piece => renderPuzzlePiece(piece, true))
-              }
-            </div>
-          </Card>
+         {/* Paleta de peças - CORRIGIDA PARA MOBILE */}
+<Card className="p-2 w-full">
+  <h2 className="text-sm font-semibold text-center mb-2 text-primary">
+    Peças disponíveis 🎯 ({pieces.filter(p => !p.isPlaced).length})
+  </h2>
+  
+  <div className={`
+    ${isMobile 
+      ? 'flex gap-2 overflow-x-auto pb-2' 
+      : 'grid grid-cols-3 gap-2'} 
+    bg-gray-50 rounded-lg p-2 max-h-[300px] overflow-y-auto
+  `}>
+    {pieces.filter(piece => !piece.isPlaced).length > 0 ? (
+      pieces
+        .filter(piece => !piece.isPlaced)
+        .map(piece => (
+          <div key={piece.id} className="flex-shrink-0">
+            {renderPuzzlePiece(piece, true)}
+          </div>
+        ))
+    ) : (
+      <div className="col-span-3 text-center py-4 text-gray-500">
+        <p className="text-lg">🎉</p>
+        <p className="text-xs">Todas as peças colocadas!</p>
+      </div>
+    )}
+  </div>
+</Card>
         </div>
 
         {/* Controles */}
