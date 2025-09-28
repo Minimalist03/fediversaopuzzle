@@ -1,7 +1,14 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "quebracabecas-biblicos-feediversao",
+  "displayName": "Quebra-Cabeças Bíblicos",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Jogos educativos cristãos para crianças - 10 histórias bíblicas interativas",
+  "author": {
+    "name": "Fé & Diversão",
+    "email": "contato@feediversao.com.br",
+    "url": "https://feediversao.com.br"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,6 +17,28 @@
     "lint": "eslint .",
     "preview": "vite preview"
   },
+  "keywords": [
+    "quebra-cabeça",
+    "bíblico",
+    "cristão",
+    "infantil",
+    "educativo",
+    "jogos",
+    "crianças",
+    "histórias bíblicas"
+  ],
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/feediversao/quebracabecas-biblicos"
+  },
+  "dependencies": {
+    // ... mantenha todas as dependencies atuais
+  },
+  "devDependencies": {
+    // ... mantenha todas as devDependencies atuais
+  }
+}
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.11",
