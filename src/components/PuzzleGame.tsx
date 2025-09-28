@@ -95,19 +95,34 @@ const getPieceSize = () => {
   const width = window.innerWidth;
   const height = window.innerHeight;
   
-  // Calcula baseado na menor dimensão disponível
-  const availableSize = Math.min(width - 40, height - 300);
-  const optimalSize = Math.floor(availableSize / 3.2);
+  // Para mobile, calcular baseado no espaço disponível
+  if (width <= 480) {
+    // Considera que precisa caber tabuleiro + peças na mesma tela
+    const availableWidth = width - 40; // 20px padding de cada lado
+    const availableHeight = height - 280; // header, controles e peças
+    
+    // Usa a menor dimensão para garantir que caiba
+    const maxFromWidth = Math.floor(availableWidth / 3.5);
+    const maxFromHeight = Math.floor(availableHeight / 3.5);
+    const optimalSize = Math.min(maxFromWidth, maxFromHeight);
+    
+    // Limites por largura de tela
+    if (width <= 360) return Math.min(70, optimalSize);
+    if (width <= 375) return Math.min(75, optimalSize);
+    if (width <= 414) return Math.min(80, optimalSize);
+    return Math.min(85, optimalSize);
+  }
   
-  // Tamanhos maiores e mais confortáveis
-  if (width <= 375) return Math.min(95, optimalSize);
-  if (width <= 414) return Math.min(105, optimalSize);
-  if (width <= 480) return Math.min(115, optimalSize);
-  if (width < 768) return Math.min(120, optimalSize);
-  return 120;
+  // Tablet
+  if (width < 768) {
+    return 95;
+  }
+  
+  // Desktop
+  return 110;
 };
-  
-  const pieceSize = getPieceSize();
+
+const pieceSize = getPieceSize();
 
   // Formatar tempo
   const formatTime = (seconds: number) => {
