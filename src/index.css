@@ -357,3 +357,19 @@ Cores inspiradas em jogos educativos clássicos
     -webkit-overflow-scrolling: touch;
   }
 }
+/* Dialog Mobile Fix */
+@media (max-width: 640px) {
+  [role="dialog"] {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    max-height: 90vh !important;
+    margin: 0 !important;
+  }
+  
+  [role="dialog"] > div {
+    max-height: calc(90vh - 2rem);
+    overflow-y: auto;
+  }
+}
