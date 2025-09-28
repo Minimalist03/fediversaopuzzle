@@ -657,159 +657,130 @@ const getPieceSize = () => {
         </div>
 
    {/* Área do jogo - LAYOUT MOBILE OTIMIZADO */}
-{isMobile ? (
-  <>
-    {/* Botões de alternância MOBILE */}
-    <div className="flex gap-2 mb-3 sticky top-0 bg-white/90 backdrop-blur z-40 p-2 rounded-lg">
-      <Button
-        onClick={() => setMobileView('board')}
-        variant={mobileView === 'board' ? 'default' : 'outline'}
-        size="sm"
-        className="flex-1"
-      >
-        🧩 Tabuleiro
-        {pieces.filter(p => p.isPlaced).length > 0 && 
-          ` (${pieces.filter(p => p.isPlaced).length}/9)`}
-      </Button>
-      <Button
-        onClick={() => setMobileView('pieces')}
-        variant={mobileView === 'pieces' ? 'default' : 'outline'}
-        size="sm"
-        className="flex-1"
-      >
-        🎯 Peças
-        {pieces.filter(p => !p.isPlaced).length > 0 && 
-          ` (${pieces.filter(p => !p.isPlaced).length})`}
-      </Button>
-    </div>
-
-    {/* Conteúdo alternado MOBILE */}
-    <div className="relative" style={{ minHeight: `${pieceSize * 3 + 100}px` }}>
-      {/* Tabuleiro */}
-      <div className={`${mobileView !== 'board' ? 'hidden' : ''}`}>
-        <Card className="p-3 mx-auto max-w-fit">
-          <div className="bg-yellow-50 p-3 rounded-xl">
-            <div className="grid grid-cols-3 gap-1">
-              {Array.from({ length: GRID_SIZE }, (_, row) =>
-                Array.from({ length: GRID_SIZE }, (_, col) =>
-                  renderPuzzleSlot(row, col)
-                )
-              )}
+        {isMobile ? (
+          <>
+            {/* Botões de alternância MOBILE */}
+            <div className="flex gap-2 mb-3 sticky top-0 bg-white/90 backdrop-blur z-40 p-2 rounded-lg">
+              <Button
+                onClick={() => setMobileView('board')}
+                variant={mobileView === 'board' ? 'default' : 'outline'}
+                size="sm"
+                className="flex-1"
+              >
+                🧩 Tabuleiro
+                {pieces.filter(p => p.isPlaced).length > 0 && 
+                  ` (${pieces.filter(p => p.isPlaced).length}/9)`}
+              </Button>
+              <Button
+                onClick={() => setMobileView('pieces')}
+                variant={mobileView === 'pieces' ? 'default' : 'outline'}
+                size="sm"
+                className="flex-1"
+              >
+                🎯 Peças
+                {pieces.filter(p => !p.isPlaced).length > 0 && 
+                  ` (${pieces.filter(p => !p.isPlaced).length})`}
+              </Button>
             </div>
-          </div>
-          <p className="text-center text-xs text-gray-500 mt-2">
-            Arraste as peças para cá
-          </p>
-        </Card>
-      </div>
 
-      {/* Peças disponíveis */}
-      <div className={`${mobileView !== 'pieces' ? 'hidden' : ''}`}>
-        <Card className="p-3">
-          <div className="grid grid-cols-3 gap-2 max-h-[60vh] overflow-y-auto">
-            {pieces.filter(p => !p.isPlaced).map(piece => (
-              <div key={piece.id} className="flex justify-center">
-                {renderPuzzlePiece(piece)}
-              </div>
-            ))}
-            
-            {pieces.filter(p => !p.isPlaced).length === 0 && (
-              <div className="col-span-3 text-center py-8">
-                <p className="text-2xl mb-2">🎯</p>
-                <p className="text-sm">Todas as peças foram colocadas!</p>
-                <Button 
-                  onClick={() => setMobileView('board')}
-                  variant="outline"
-                  size="sm"
-                  className="mt-2"
-                >
-                  Ver Tabuleiro
-                </Button>
-              </div>
-            )}
-          </div>
-          <p className="text-center text-xs text-gray-500 mt-2">
-            Segure e arraste para o tabuleiro
-          </p>
-        </Card>
-      </div>
-    </div>
-  </>
-) : (
-  /* DESKTOP/TABLET: Layout lado a lado (mantém o original) */
-  <div className="flex flex-col lg:flex-row gap-6 items-center justify-center">
-    {/* Tabuleiro */}
-    <Card className="p-2 sm:p-4 mx-auto">
-      <h2 className="text-sm sm:text-lg font-semibold text-center mb-2 sm:mb-4 text-primary">
-        Monte aqui! 🧩
-      </h2>
-      <div className="bg-yellow-50 p-2 sm:p-4 rounded-xl inline-block mx-auto">
-        <div className="grid grid-cols-3 gap-1">
-          {Array.from({ length: GRID_SIZE }, (_, row) =>
-            Array.from({ length: GRID_SIZE }, (_, col) =>
-              renderPuzzleSlot(row, col)
-            )
-          )}
-        </div>
-      </div>
-    </Card>
-    
-    {/* Paleta de peças */}
-    <Card className="p-2 w-full">
-      <h2 className="text-sm font-semibold text-center mb-2 text-primary">
-        Peças disponíveis ({pieces.filter(p => !p.isPlaced).length} de 9)
-      </h2>
-      
-      <div className="bg-gray-50 rounded-lg p-2 max-h-[400px] overflow-y-auto">
-        <div className="grid grid-cols-3 gap-2">
-          {pieces
-            .filter(piece => !piece.isPlaced)
-            .map(piece => (
-              <div key={piece.id} className="flex justify-center">
-                {renderPuzzlePiece(piece)}
-              </div>
-            ))}
-          
-          {pieces.filter(p => !p.isPlaced).length === 0 && (
-            <div className="col-span-3 text-center py-4">
-              <p className="text-lg">✅</p>
-              <p className="text-xs">Organize as peças no lugar correto!</p>
-            </div>
-          )}
-        </div>
-      </div>
-    </Card>
-  </div>
-)}
-
-          {/* Paleta de peças */}
-          <Card className="p-2 w-full">
-            <h2 className="text-sm font-semibold text-center mb-2 text-primary">
-              Peças disponíveis ({pieces.filter(p => !p.isPlaced).length} de 9)
-            </h2>
-            
-            {/* Container com scroll se necessário */}
-            <div className="bg-gray-50 rounded-lg p-2 max-h-[400px] overflow-y-auto">
-              <div className="grid grid-cols-3 gap-2">
-                {pieces
-                  .filter(piece => !piece.isPlaced)
-                  .map(piece => (
-                    <div key={piece.id} className="flex justify-center">
-                      {renderPuzzlePiece(piece)}
+            {/* Conteúdo alternado MOBILE */}
+            <div className="relative" style={{ minHeight: `${pieceSize * 3 + 100}px` }}>
+              {/* Tabuleiro */}
+              <div className={`${mobileView !== 'board' ? 'hidden' : ''}`}>
+                <Card className="p-3 mx-auto max-w-fit">
+                  <div className="bg-yellow-50 p-3 rounded-xl">
+                    <div className="grid grid-cols-3 gap-1">
+                      {Array.from({ length: GRID_SIZE }, (_, row) =>
+                        Array.from({ length: GRID_SIZE }, (_, col) =>
+                          renderPuzzleSlot(row, col)
+                        )
+                      )}
                     </div>
-                  ))}
-                
-                {/* Mensagem quando todas colocadas */}
-                {pieces.filter(p => !p.isPlaced).length === 0 && (
-                  <div className="col-span-3 text-center py-4">
-                    <p className="text-lg">✅</p>
-                    <p className="text-xs">Organize as peças no lugar correto!</p>
                   </div>
-                )}
+                  <p className="text-center text-xs text-gray-500 mt-2">
+                    Arraste as peças para cá
+                  </p>
+                </Card>
+              </div>
+
+              {/* Peças disponíveis */}
+              <div className={`${mobileView !== 'pieces' ? 'hidden' : ''}`}>
+                <Card className="p-3">
+                  <div className="grid grid-cols-3 gap-2 max-h-[60vh] overflow-y-auto">
+                    {pieces.filter(p => !p.isPlaced).map(piece => (
+                      <div key={piece.id} className="flex justify-center">
+                        {renderPuzzlePiece(piece)}
+                      </div>
+                    ))}
+                    
+                    {pieces.filter(p => !p.isPlaced).length === 0 && (
+                      <div className="col-span-3 text-center py-8">
+                        <p className="text-2xl mb-2">🎯</p>
+                        <p className="text-sm">Todas as peças foram colocadas!</p>
+                        <Button 
+                          onClick={() => setMobileView('board')}
+                          variant="outline"
+                          size="sm"
+                          className="mt-2"
+                        >
+                          Ver Tabuleiro
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-center text-xs text-gray-500 mt-2">
+                    Segure e arraste para o tabuleiro
+                  </p>
+                </Card>
               </div>
             </div>
-          </Card>
-        </div>
+          </>
+        ) : (
+          /* DESKTOP/TABLET: Layout lado a lado */
+          <div className="flex flex-col lg:flex-row gap-6 items-center justify-center">
+            {/* Tabuleiro */}
+            <Card className="p-2 sm:p-4 mx-auto">
+              <h2 className="text-sm sm:text-lg font-semibold text-center mb-2 sm:mb-4 text-primary">
+                Monte aqui! 🧩
+              </h2>
+              <div className="bg-yellow-50 p-2 sm:p-4 rounded-xl inline-block mx-auto">
+                <div className="grid grid-cols-3 gap-1">
+                  {Array.from({ length: GRID_SIZE }, (_, row) =>
+                    Array.from({ length: GRID_SIZE }, (_, col) =>
+                      renderPuzzleSlot(row, col)
+                    )
+                  )}
+                </div>
+              </div>
+            </Card>
+            
+            {/* Paleta de peças */}
+            <Card className="p-2 w-full">
+              <h2 className="text-sm font-semibold text-center mb-2 text-primary">
+                Peças disponíveis ({pieces.filter(p => !p.isPlaced).length} de 9)
+              </h2>
+              
+              <div className="bg-gray-50 rounded-lg p-2 max-h-[400px] overflow-y-auto">
+                <div className="grid grid-cols-3 gap-2">
+                  {pieces
+                    .filter(piece => !piece.isPlaced)
+                    .map(piece => (
+                      <div key={piece.id} className="flex justify-center">
+                        {renderPuzzlePiece(piece)}
+                      </div>
+                    ))}
+                  
+                  {pieces.filter(p => !p.isPlaced).length === 0 && (
+                    <div className="col-span-3 text-center py-4">
+                      <p className="text-lg">✅</p>
+                      <p className="text-xs">Organize as peças no lugar correto!</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
 
         {/* Controles - MELHORADOS */}
         <div className="text-center mt-4 space-y-3">
@@ -943,22 +914,22 @@ const getPieceSize = () => {
         </Dialog>
 
         {/* Preview de Drag para Mobile */}
-{dragPreview && isMobile && (
-  <div
-    className="fixed pointer-events-none z-50 opacity-80 rounded-lg"
-    style={{
-      left: dragPreview.x - pieceSize / 2,
-      top: dragPreview.y - pieceSize / 2,
-      width: pieceSize,
-      height: pieceSize,
-      backgroundImage: `url(${currentPuzzle.image})`,
-      backgroundSize: `${pieceSize * GRID_SIZE}px ${pieceSize * GRID_SIZE}px`,
-      backgroundPosition: `-${dragPreview.piece.correctPosition.col * pieceSize}px -${dragPreview.piece.correctPosition.row * pieceSize}px`,
-      border: '2px solid hsl(var(--primary))',
-      boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
-    }}
-  />
-)}
+        {dragPreview && isMobile && (
+          <div
+            className="fixed pointer-events-none z-50 opacity-80 rounded-lg"
+            style={{
+              left: dragPreview.x - pieceSize / 2,
+              top: dragPreview.y - pieceSize / 2,
+              width: pieceSize,
+              height: pieceSize,
+              backgroundImage: `url(${currentPuzzle.image})`,
+              backgroundSize: `${pieceSize * GRID_SIZE}px ${pieceSize * GRID_SIZE}px`,
+              backgroundPosition: `-${dragPreview.piece.correctPosition.col * pieceSize}px -${dragPreview.piece.correctPosition.row * pieceSize}px`,
+              border: '2px solid hsl(var(--primary))',
+              boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+            }}
+          />
+        )}
       </div>
     </div>
   );
