@@ -782,7 +782,7 @@ const getPieceSize = () => {
   </div>
 )}
 
-          {/* Paleta de peças - CORRIGIDA */}
+          {/* Paleta de peças */}
           <Card className="p-2 w-full">
             <h2 className="text-sm font-semibold text-center mb-2 text-primary">
               Peças disponíveis ({pieces.filter(p => !p.isPlaced).length} de 9)
