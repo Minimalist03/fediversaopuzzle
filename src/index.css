@@ -266,3 +266,76 @@ Cores inspiradas em jogos educativos clássicos
     animation: wiggle 1s ease-in-out;
   }
 }
+/* ========== CORREÇÕES MOBILE PUZZLE ========== */
+
+/* Container das peças */
+.pieces-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+/* Peça individual */
+.puzzle-piece {
+  position: relative !important;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+  cursor: grab;
+  border-radius: 8px;
+}
+
+.puzzle-piece:active {
+  z-index: 1000 !important;
+  transform: scale(1.1);
+  border-color: #4CAF50;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+  cursor: grabbing;
+}
+
+/* Slot do puzzle */
+.puzzle-slot {
+  border: 3px dashed #e5e7eb;
+  transition: all 0.2s;
+  background: white;
+}
+
+.puzzle-slot.drag-over {
+  background-color: rgba(74, 222, 128, 0.2) !important;
+  border-color: #10b981 !important;
+  border-style: solid !important;
+  transform: scale(1.05);
+}
+
+/* Correções específicas para mobile */
+@media (max-width: 640px) {
+  .pieces-container {
+    grid-template-columns: repeat(3, minmax(100px, 1fr));
+    max-height: 350px;
+  }
+  
+  .puzzle-piece {
+    min-width: 100px !important;
+    min-height: 100px !important;
+    touch-action: none;
+  }
+  
+  .puzzle-slot {
+    border-width: 2px;
+  }
+  
+  /* Dialog responsivo */
+  [role="dialog"] {
+    margin: 1rem !important;
+  }
+  
+  /* Previne zoom no iOS */
+  input, button, textarea, select {
+    font-size: 16px !important;
+  }
+}
