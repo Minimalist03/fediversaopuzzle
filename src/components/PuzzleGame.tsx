@@ -943,25 +943,24 @@ const getPieceSize = () => {
         </Dialog>
 
         {/* Preview de Drag para Mobile */}
-        {dragPreview && isMobile && (
-          <div
-            className="fixed pointer-events-none z-50 opacity-80 rounded-lg"
-            style={{
-              left: dragPreview.x - pieceSize / 2,
-              top: dragPreview.y - pieceSize / 2,
-              width: pieceSize,
-              height: pieceSize,
-              backgroundImage: `url(${currentPuzzle.image})`,
-              backgroundSize: `${pieceSize * GRID_SIZE}px ${pieceSize * GRID_SIZE}px`,
-              backgroundPosition: `-${dragPreview.piece.correctPosition.col * pieceSize}px -${dragPreview.piece.correctPosition.row * pieceSize}px`,
-              border: '2px solid hsl(var(--primary))',
-              boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
-            }}
-          />
-        )}
-      </div>
-</div>
+{dragPreview && isMobile && (
+  <div
+    className="fixed pointer-events-none z-50 opacity-80 rounded-lg"
+    style={{
+      left: dragPreview.x - pieceSize / 2,
+      top: dragPreview.y - pieceSize / 2,
+      width: pieceSize,
+      height: pieceSize,
+      backgroundImage: `url(${currentPuzzle.image})`,
+      backgroundSize: `${pieceSize * GRID_SIZE}px ${pieceSize * GRID_SIZE}px`,
+      backgroundPosition: `-${dragPreview.piece.correctPosition.col * pieceSize}px -${dragPreview.piece.correctPosition.row * pieceSize}px`,
+      border: '2px solid hsl(var(--primary))',
+      boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+    }}
+  />
 )}
+      </div>
+    </div>
   );
 };
 
