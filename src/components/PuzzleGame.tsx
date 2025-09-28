@@ -52,9 +52,7 @@ const PuzzleGame = () => {
   const [moves, setMoves] = useState(0);
   const [earnedStars, setEarnedStars] = useState(0);
   const [showWelcome, setShowWelcome] = useState(!progress.playerName);
-  const [showParentDashboard, setShowParentDashboard] = useState(false);
-  const [mobileView, setMobileView] = useState<'board' | 'pieces'>('board');
-  
+  const [showParentDashboard, setShowParentDashboard] = useState(false);  
   // Sons
   const { playSuccessSound, playPieceDropSound, playCompletionSound } = useSoundEffects();
 
@@ -91,9 +89,30 @@ const PuzzleGame = () => {
   }, [gameStarted, isComplete, startTime]);
 
   // Tamanhos otimizados por dispositivo
+// Tamanhos otimizados por dispositivo
 const getPieceSize = () => {
   const width = window.innerWidth;
   const height = window.innerHeight;
+  
+  if (width <= 480) {
+    // Mobile: calcula para caber 2 grids 3x3 na tela
+    const padding = 48;
+    const gaps = 16;
+    const extraSpace = 250; // header, textos, botões
+    
+    const maxWidth = Math.floor((width - padding - gaps) / 3.2);
+    const maxHeight = Math.floor((height - extraSpace) / 6.5);
+    const optimalSize = Math.min(maxWidth, maxHeight);
+    
+    if (width <= 360) return Math.max(65, Math.min(70, optimalSize));
+    if (width <= 375) return Math.max(68, Math.min(73, optimalSize));
+    if (width <= 414) return Math.max(72, Math.min(78, optimalSize));
+    return Math.max(75, Math.min(82, optimalSize));
+  }
+  
+  if (width < 768) return 90;
+  return 100;
+};
   
   // Para mobile, calcular baseado no espaço disponível
   if (width <= 480) {
@@ -671,9 +690,9 @@ const pieceSize = getPieceSize();
           </div>
         </div>
 
-   {/* Área do jogo - CORRIGIDA */}
-<div className="space-y-3">
-  {/* Tabuleiro sempre visível */}
+   {/* Área do jogo - TODAS AS PEÇAS VISÍVEIS */}
+<div className="space-y-2">
+  {/* Tabuleiro */}
   <Card className="p-2 mx-auto max-w-fit">
     <h2 className="text-sm font-semibold text-center mb-2 text-primary">
       Monte aqui! 🧩
@@ -689,34 +708,69 @@ const pieceSize = getPieceSize();
     </div>
   </Card>
 
-  {/* Peças - scroll horizontal no mobile, grid no desktop */}
-  <Card className="p-2">
+  {/* Peças - SEMPRE GRID 3x3 */}
+  <Card className="p-2 mx-auto max-w-fit">
     <h3 className="text-xs font-semibold text-center mb-2 text-primary">
       Peças disponíveis ({pieces.filter(p => !p.isPlaced).length})
     </h3>
-    <div className={`
-      ${isMobile 
-        ? 'flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory' 
-        : 'grid grid-cols-3 gap-2 max-w-md mx-auto'}
-      bg-gray-50 rounded-lg p-2
-    `}>
-      {pieces.filter(p => !p.isPlaced).map(piece => (
-        <div 
-          key={piece.id} 
-          className={`${isMobile ? 'snap-center flex-shrink-0' : 'flex justify-center'}`}
-        >
-          {renderPuzzlePiece(piece)}
-        </div>
-      ))}
+    <div className="bg-gray-50 rounded-lg p-2">
+      <div className="grid grid-cols-3 gap-1">
+        {pieces.filter(p => !p.isPlaced).map(piece => (
+          <div key={piece.id} className="flex justify-center items-center">
+            {renderPuzzlePiece(piece)}
+          </div>
+        ))}
+        
+        {/* Espaços vazios quando peças são usadas */}
+        {[...Array(9 - pieces.filter(p => !p.isPlaced).length)].map((_, i) => (
+          <div 
+            key={`empty-${i}`} 
+            className="border-2 border-dashed border-gray-200 rounded-lg"
+            style={{ width: `${pieceSize}px`, height: `${pieceSize}px` }}
+          />
+        ))}
+      </div>
       
       {pieces.filter(p => !p.isPlaced).length === 0 && (
-        <div className="col-span-3 w-full text-center py-4 text-gray-500">
-          <p className="text-lg">✅</p>
-          <p className="text-xs">Todas as peças colocadas!</p>
-          <p className="text-xs mt-1">Organize no lugar correto</p>
+        <div className="text-center py-2 text-gray-500">
+          <p className="text-xs">✅ Todas as peças foram colocadas!</p>
         </div>
       )}
     </div>
+  </Card>
+</div>
+
+  {/* Peças - SEMPRE GRID 3x3 */}
+  <Card className="p-2 mx-auto max-w-fit">
+    <h3 className="text-xs font-semibold text-center mb-2 text-primary">
+      Peças disponíveis ({pieces.filter(p => !p.isPlaced).length})
+    </h3>
+    <div className="bg-gray-50 rounded-lg p-2">
+      <div className="grid grid-cols-3 gap-1">
+        {pieces.filter(p => !p.isPlaced).map(piece => (
+          <div key={piece.id} className="flex justify-center items-center">
+            {renderPuzzlePiece(piece)}
+          </div>
+        ))}
+        
+        {/* Espaços vazios quando peças são usadas */}
+        {[...Array(9 - pieces.filter(p => !p.isPlaced).length)].map((_, i) => (
+          <div 
+            key={`empty-${i}`} 
+            className="border-2 border-dashed border-gray-200 rounded-lg"
+            style={{ width: `${pieceSize}px`, height: `${pieceSize}px` }}
+          />
+        ))}
+      </div>
+      
+      {pieces.filter(p => !p.isPlaced).length === 0 && (
+        <div className="text-center py-2 text-gray-500">
+          <p className="text-xs">✅ Todas as peças foram colocadas!</p>
+        </div>
+      )}
+    </div>
+  </Card>
+</div>
     
     {/* Indicador de scroll no mobile */}
     {isMobile && pieces.filter(p => !p.isPlaced).length > 3 && (
