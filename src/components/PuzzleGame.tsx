@@ -247,12 +247,11 @@ const PuzzleGame = () => {
 
   // Tamanhos otimizados por dispositivo
   const getPieceSize = () => {
-    switch(deviceType) {
-      case 'mobile': return 120;
-      case 'tablet': return 140;
-      default: return 160;
-    }
-  };
+  const width = window.innerWidth;
+  if (width < 480) return 90;
+  if (width < 768) return 100;
+  return 120;
+};
   
   const pieceSize = getPieceSize();
 
