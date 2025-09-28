@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { puzzleImages, PuzzleImageData } from "@/data/puzzleImages";
+import { useGameProgress } from "@/hooks/useGameProgress";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { Trophy, Clock, Target, Star, Lock, Home, RotateCcw, ChevronRight, Share2 } from "lucide-react";
 
@@ -16,162 +17,6 @@ interface PuzzlePiece {
   correctPosition: { row: number; col: number };
   isPlaced: boolean;
 }
-
-interface Position {
-  row: number;
-  col: number;
-}
-
-interface PuzzleProgress {
-  id: string;
-  completed: boolean;
-  stars: number;
-  timeSpent: number;
-  completedAt?: Date;
-  moves: number;
-}
-
-interface GameProgress {
-  playerName: string;
-  totalStars: number;
-  puzzlesCompleted: PuzzleProgress[];
-  streakDays: number;
-  lastPlayed: Date;
-  certificates: string[];
-  totalTimePlayed: number;
-}
-
-// ==================== CUSTOM HOOKS ====================
-const useGameProgress = () => {
-  const [progress, setProgress] = useState<GameProgress>(() => {
-    const saved = localStorage.getItem('biblePuzzleProgress');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        // Se falhar ao parsear, retorna estado inicial
-      }
-    }
-    return {
-      playerName: '',
-      totalStars: 0,
-      puzzlesCompleted: [],
-      streakDays: 0,
-      lastPlayed: new Date(),
-      certificates: [],
-      totalTimePlayed: 0
-    };
-  });
-
-  useEffect(() => {
-    localStorage.setItem('biblePuzzleProgress', JSON.stringify(progress));
-  }, [progress]);
-
-  const calculateStars = (timeSeconds: number, moves: number): number => {
-    if (timeSeconds < 60 && moves < 15) return 3;
-    if (timeSeconds < 120 && moves < 25) return 2;
-    return 1;
-  };
-
-  const savePuzzleCompletion = (puzzleId: string, timeSpent: number, moves: number) => {
-    const stars = calculateStars(timeSpent, moves);
-    
-    setProgress(prev => {
-      const existingIndex = prev.puzzlesCompleted.findIndex(p => p.id === puzzleId);
-      const puzzleData: PuzzleProgress = {
-        id: puzzleId,
-        completed: true,
-        stars,
-        timeSpent,
-        moves,
-        completedAt: new Date()
-      };
-
-      let newPuzzles = [...prev.puzzlesCompleted];
-      let additionalStars = stars;
-
-      if (existingIndex >= 0) {
-        const oldStars = newPuzzles[existingIndex].stars;
-        if (stars > oldStars) {
-          additionalStars = stars - oldStars;
-          newPuzzles[existingIndex] = puzzleData;
-        } else {
-          additionalStars = 0;
-        }
-      } else {
-        newPuzzles.push(puzzleData);
-      }
-
-      // Verifica certificados
-      const totalCompleted = newPuzzles.length;
-      let newCertificates = [...prev.certificates];
-      
-      if (totalCompleted === 3 && !newCertificates.includes('iniciante')) {
-        newCertificates.push('iniciante');
-        toast.success('🏆 Certificado Iniciante Desbloqueado!', { duration: 5000 });
-      }
-      if (totalCompleted === 7 && !newCertificates.includes('explorador')) {
-        newCertificates.push('explorador');
-        toast.success('🎯 Certificado Explorador Desbloqueado!', { duration: 5000 });
-      }
-      if (totalCompleted === 10 && !newCertificates.includes('mestre')) {
-        newCertificates.push('mestre');
-        toast.success('👑 Certificado Mestre Bíblico Desbloqueado!', { duration: 5000 });
-      }
-
-      return {
-        ...prev,
-        puzzlesCompleted: newPuzzles,
-        totalStars: prev.totalStars + additionalStars,
-        certificates: newCertificates,
-        lastPlayed: new Date(),
-        totalTimePlayed: prev.totalTimePlayed + timeSpent
-      };
-    });
-
-    return stars;
-  };
-
-  const getPuzzleProgress = (puzzleId: string): PuzzleProgress | undefined => {
-    return progress.puzzlesCompleted.find(p => p.id === puzzleId);
-  };
-
-  const isPuzzleUnlocked = (puzzleIndex: number): boolean => {
-    if (puzzleIndex === 0) return true;
-    const previousPuzzleId = `puzzle-${puzzleIndex - 1}`;
-    return progress.puzzlesCompleted.some(p => p.id === previousPuzzleId);
-  };
-
-  const setPlayerName = (name: string) => {
-    setProgress(prev => ({ ...prev, playerName: name }));
-  };
-
-  const getStats = () => {
-    const totalPuzzles = 10;
-    const completedCount = progress.puzzlesCompleted.length;
-    const completionRate = (completedCount / totalPuzzles) * 100;
-    const averageStars = progress.totalStars / Math.max(completedCount, 1);
-    
-    return {
-      totalStars: progress.totalStars,
-      puzzlesCompleted: completedCount,
-      completionRate,
-      averageStars,
-      totalTime: progress.totalTimePlayed,
-      certificates: progress.certificates
-    };
-  };
-
-  return {
-    progress,
-    savePuzzleCompletion,
-    getPuzzleProgress,
-    isPuzzleUnlocked,
-    setPlayerName,
-    getStats,
-    calculateStars
-  };
-};
 
 // ==================== COMPONENTE PRINCIPAL ====================
 const PuzzleGame = () => {
@@ -205,7 +50,6 @@ const PuzzleGame = () => {
   const [startTime, setStartTime] = useState<number>(0);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [moves, setMoves] = useState(0);
-  const [showStars, setShowStars] = useState(false);
   const [earnedStars, setEarnedStars] = useState(0);
   const [showWelcome, setShowWelcome] = useState(!progress.playerName);
   const [showParentDashboard, setShowParentDashboard] = useState(false);
@@ -247,11 +91,13 @@ const PuzzleGame = () => {
 
   // Tamanhos otimizados por dispositivo
   const getPieceSize = () => {
-  const width = window.innerWidth;
-  if (width < 480) return 90;
-  if (width < 768) return 100;
-  return 120;
-};
+    const width = window.innerWidth;
+    // Tamanhos menores para mobile
+    if (width <= 375) return 75;
+    if (width < 480) return 80;
+    if (width < 768) return 90;
+    return 110;
+  };
   
   const pieceSize = getPieceSize();
 
@@ -266,6 +112,7 @@ const PuzzleGame = () => {
   const initializePuzzle = useCallback(() => {
     const newPieces: PuzzlePiece[] = [];
     
+    // Criar 9 peças (3x3)
     for (let row = 0; row < GRID_SIZE; row++) {
       for (let col = 0; col < GRID_SIZE; col++) {
         newPieces.push({
@@ -279,13 +126,15 @@ const PuzzleGame = () => {
     }
     
     const shuffledPieces = [...newPieces].sort(() => Math.random() - 0.5);
+    console.log('Total de peças criadas:', shuffledPieces.length); // Debug
+    
     setPieces(shuffledPieces);
     setIsComplete(false);
     setGameStarted(true);
     setStartTime(Date.now());
     setElapsedTime(0);
     setMoves(0);
-    toast(`✨ Monte ${currentPuzzle.title} arrastando as peças! 🙏`);
+    // Removido toast daqui
   }, [currentPuzzle]);
 
   // Verifica se o quebra-cabeça está completo
@@ -309,13 +158,8 @@ const PuzzleGame = () => {
         setEarnedStars(stars);
         playCompletionSound();
         
-        // Mostra estrelas depois de 500ms
         setTimeout(() => {
-          setShowStars(true);
-          setTimeout(() => {
-            setShowStars(false);
-            setShowCongratulations(true);
-          }, 2000);
+          setShowCongratulations(true);
         }, 500);
       }
     }
@@ -407,7 +251,7 @@ const PuzzleGame = () => {
     );
 
     if (existingPiece) {
-      toast("Já existe uma peça aqui! 🤔");
+      // Removido toast - apenas retorna
       return;
     }
 
@@ -421,20 +265,18 @@ const PuzzleGame = () => {
       )
     );
 
+    // Apenas toca o som, sem toast
     if (draggedPiece.correctPosition.row === targetRow && 
         draggedPiece.correctPosition.col === targetCol) {
       playSuccessSound();
-      toast("🎉 Perfeito! Peça no lugar certo!");
     } else {
       playPieceDropSound();
-      toast("😊 Continue tentando!");
     }
   };
 
   const resetGame = () => {
     setShowCongratulations(false);
     setShowNextPuzzleDialog(false);
-    setShowStars(false);
     initializePuzzle();
   };
 
@@ -443,7 +285,6 @@ const PuzzleGame = () => {
       setCurrentPuzzleIndex(prev => prev + 1);
       setShowCongratulations(false);
       setShowNextPuzzleDialog(false);
-      setShowStars(false);
       initializePuzzle();
     } else {
       setShowNextPuzzleDialog(true);
@@ -454,7 +295,6 @@ const PuzzleGame = () => {
     setGameStarted(false);
     setShowCongratulations(false);
     setShowNextPuzzleDialog(false);
-    setShowStars(false);
   };
 
   const shareProgress = () => {
@@ -532,71 +372,52 @@ const PuzzleGame = () => {
     );
   };
 
-  // Tela de Boas-Vindas
+  // Tela de Boas-Vindas SIMPLIFICADA
   if (showWelcome) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100 
                       flex items-center justify-center p-4">
-        <Card className="max-w-lg w-full p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 
-                         bg-clip-text text-transparent mb-2">
+        <Card className="max-w-md w-full p-6">
+          <div className="text-center mb-6">
+            <div className="text-6xl mb-3 animate-bounce">🧩</div>
+            <h1 className="text-2xl font-bold text-gray-800">
               Quebra-Cabeças Bíblicos
             </h1>
-            <p className="text-gray-600">Aprenda histórias sagradas brincando! 🙏</p>
           </div>
 
-          <div className="mb-8">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Qual é o seu nome, campeão(ã)?
-            </label>
-            <Input
-              type="text"
-              placeholder="Digite seu nome..."
-              className="text-lg p-3"
-              maxLength={20}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  const value = (e.target as HTMLInputElement).value.trim();
-                  if (value) {
-                    setPlayerName(value);
-                    setShowWelcome(false);
-                  }
-                }
-              }}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 mb-8">
-            <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-3 rounded-xl text-white">
-              <div className="text-2xl mb-1">📖</div>
-              <div className="text-sm font-medium">10 Histórias</div>
-            </div>
-            <div className="bg-gradient-to-r from-yellow-500 to-orange-500 p-3 rounded-xl text-white">
-              <div className="text-2xl mb-1">⭐</div>
-              <div className="text-sm font-medium">Ganhe Estrelas</div>
-            </div>
-            <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-3 rounded-xl text-white">
-              <div className="text-2xl mb-1">🏆</div>
-              <div className="text-sm font-medium">Certificados</div>
-            </div>
-            <div className="bg-gradient-to-r from-green-500 to-teal-500 p-3 rounded-xl text-white">
-              <div className="text-2xl mb-1">🎮</div>
-              <div className="text-sm font-medium">Jogue Offline</div>
-            </div>
-          </div>
-
+          <Input
+            type="text"
+            placeholder="Seu nome..."
+            className="text-xl p-4 text-center font-bold mb-4"
+            maxLength={20}
+            autoFocus
+            id="nameInput"
+            onKeyPress={(e) => {
+              if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                setPlayerName(e.currentTarget.value.trim());
+                setShowWelcome(false);
+              }
+            }}
+          />
+          
           <Button
             onClick={() => {
-              const input = document.querySelector('input') as HTMLInputElement;
-              const name = input?.value.trim() || 'Campeão';
-              setPlayerName(name);
-              setShowWelcome(false);
+              const input = document.getElementById('nameInput') as HTMLInputElement;
+              if (input?.value.trim()) {
+                setPlayerName(input.value.trim());
+                setShowWelcome(false);
+              } else {
+                toast.error('Digite seu nome primeiro! ☝️');
+              }
             }}
-            className="w-full text-lg py-6 bg-gradient-to-r from-green-500 to-green-600"
+            className="w-full text-lg py-6 bg-green-500 hover:bg-green-600"
           >
-            Começar Aventura! 🚀
+            COMEÇAR! 🎮
           </Button>
+
+          <p className="text-xs text-center text-gray-500 mt-4">
+            10 histórias • Ganhe estrelas • Certificados
+          </p>
         </Card>
       </div>
     );
@@ -685,7 +506,6 @@ const PuzzleGame = () => {
     return (
       <div className="min-h-screen p-4 sm:p-6 bg-gradient-to-br from-background via-card to-secondary/20">
         <div className="max-w-6xl mx-auto">
-          {/* Header com progresso */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-primary mb-2">
               Olá, {progress.playerName}! 👋
@@ -720,7 +540,6 @@ const PuzzleGame = () => {
             </Button>
           </div>
 
-          {/* Grid de puzzles */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {puzzleImages.map((puzzle, index) => {
               const puzzleProgress = getPuzzleProgress(`puzzle-${index}`);
@@ -744,7 +563,6 @@ const PuzzleGame = () => {
                     }}
                     className="p-4"
                   >
-                    {/* Imagem com overlay se bloqueado */}
                     <div className="relative">
                       <img 
                         src={puzzle.image} 
@@ -753,7 +571,6 @@ const PuzzleGame = () => {
                           ${!isUnlocked ? 'filter grayscale blur-sm' : ''}`}
                       />
                       
-                      {/* Estrelas se completado */}
                       {puzzleProgress?.completed && (
                         <div className="absolute top-2 right-2 bg-white/90 rounded-full px-2 py-1">
                           <div className="flex gap-0.5">
@@ -767,7 +584,6 @@ const PuzzleGame = () => {
                         </div>
                       )}
                       
-                      {/* Cadeado se bloqueado */}
                       {!isUnlocked && (
                         <div className="absolute inset-0 flex items-center justify-center">
                           <Lock className="h-12 w-12 text-white drop-shadow-lg" />
@@ -782,7 +598,6 @@ const PuzzleGame = () => {
                       {puzzle.description}
                     </p>
                     
-                    {/* Status */}
                     <div className="mt-2">
                       {puzzleProgress?.completed ? (
                         <span className="text-xs text-green-600 font-medium">
@@ -813,207 +628,178 @@ const PuzzleGame = () => {
     <div className="min-h-screen p-4 sm:p-6 bg-gradient-to-br from-background via-card to-secondary/20">
       <div className="max-w-7xl mx-auto">
         {/* Header do jogo */}
-        <div className="text-center mb-6">
-          <h1 className="text-2xl sm:text-4xl font-bold text-primary mb-2">
+        <div className="text-center mb-4">
+          <h1 className="text-xl sm:text-2xl font-bold text-primary mb-2">
             {currentPuzzle.title}
           </h1>
-          <div className="flex justify-center gap-4 text-sm">
+          <div className="flex justify-center gap-3 text-xs sm:text-sm">
             <div className="flex items-center gap-1">
-              <Clock className="h-4 w-4" />
+              <Clock className="h-3 w-3" />
               <span className="font-mono">{formatTime(elapsedTime)}</span>
             </div>
             <div className="flex items-center gap-1">
-              <Target className="h-4 w-4" />
+              <Target className="h-3 w-3" />
               <span>{moves} movimentos</span>
             </div>
             <div className="flex items-center gap-1">
-              <Star className="h-4 w-4" />
+              <Star className="h-3 w-3" />
               <span>Puzzle {currentPuzzleIndex + 1}/{puzzleImages.length}</span>
             </div>
           </div>
         </div>
 
-        {/* Área do jogo */}
-        <div className="flex flex-col lg:flex-row gap-6 items-center justify-center">
-          {/* Tabuleiro */}
-          <Card className="p-4">
-            <h2 className="text-lg font-semibold text-center mb-4 text-primary">
-              Monte a imagem aqui! 🧩
+        {/* Área do jogo - LAYOUT MOBILE OTIMIZADO */}
+        <div className={`${isMobile ? 'flex flex-col gap-3' : 'flex flex-col lg:flex-row gap-6 items-center justify-center'}`}>
+          {/* Tabuleiro - AJUSTADO */}
+          <Card className="p-2 sm:p-4 mx-auto">
+            <h2 className="text-sm sm:text-lg font-semibold text-center mb-2 sm:mb-4 text-primary">
+              Monte aqui! 🧩
             </h2>
-            <div className="grid grid-cols-3 gap-2 bg-game-board p-4 rounded-xl">
-              {Array.from({ length: GRID_SIZE }, (_, row) =>
-                Array.from({ length: GRID_SIZE }, (_, col) =>
-                  renderPuzzleSlot(row, col)
-                )
-              )}
+            <div className="bg-yellow-50 p-2 sm:p-4 rounded-xl inline-block mx-auto">
+              <div className="grid grid-cols-3 gap-1">
+                {Array.from({ length: GRID_SIZE }, (_, row) =>
+                  Array.from({ length: GRID_SIZE }, (_, col) =>
+                    renderPuzzleSlot(row, col)
+                  )
+                )}
+              </div>
             </div>
           </Card>
 
-          {/* Paleta de peças */}
-         {/* Paleta de peças - CORRIGIDA PARA MOBILE */}
-<Card className="p-2 w-full">
-  <h2 className="text-sm font-semibold text-center mb-2 text-primary">
-    Peças disponíveis 🎯 ({pieces.filter(p => !p.isPlaced).length})
-  </h2>
-  
-  <div className={`
-    ${isMobile 
-      ? 'flex gap-2 overflow-x-auto pb-2' 
-      : 'grid grid-cols-3 gap-2'} 
-    bg-gray-50 rounded-lg p-2 max-h-[300px] overflow-y-auto
-  `}>
-    {pieces.filter(piece => !piece.isPlaced).length > 0 ? (
-      pieces
-        .filter(piece => !piece.isPlaced)
-        .map(piece => (
-          <div key={piece.id} className="flex-shrink-0">
-            {renderPuzzlePiece(piece, true)}
-          </div>
-        ))
-    ) : (
-      <div className="col-span-3 text-center py-4 text-gray-500">
-        <p className="text-lg">🎉</p>
-        <p className="text-xs">Todas as peças colocadas!</p>
-      </div>
-    )}
-  </div>
-</Card>
+          {/* Paleta de peças - CORRIGIDA */}
+          <Card className="p-2 w-full">
+            <h2 className="text-sm font-semibold text-center mb-2 text-primary">
+              Peças disponíveis ({pieces.filter(p => !p.isPlaced).length} de 9)
+            </h2>
+            
+            {/* Container com scroll se necessário */}
+            <div className="bg-gray-50 rounded-lg p-2 max-h-[400px] overflow-y-auto">
+              <div className="grid grid-cols-3 gap-2">
+                {pieces
+                  .filter(piece => !piece.isPlaced)
+                  .map(piece => (
+                    <div key={piece.id} className="flex justify-center">
+                      {renderPuzzlePiece(piece)}
+                    </div>
+                  ))}
+                
+                {/* Mensagem quando todas colocadas */}
+                {pieces.filter(p => !p.isPlaced).length === 0 && (
+                  <div className="col-span-3 text-center py-4">
+                    <p className="text-lg">✅</p>
+                    <p className="text-xs">Organize as peças no lugar correto!</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
         </div>
 
-        {/* Controles */}
-        <div className="text-center mt-6 space-y-3">
-          <div className="flex justify-center gap-3">
-            <Button onClick={goToPuzzleSelection} variant="outline">
-              <Home className="mr-2 h-4 w-4" />
-              Escolher História
+        {/* Controles - MELHORADOS */}
+        <div className="text-center mt-4 space-y-3">
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button 
+              onClick={goToPuzzleSelection} 
+              variant="outline"
+              size={isMobile ? "sm" : "default"}
+            >
+              <Home className="mr-1 h-4 w-4" />
+              Menu
             </Button>
-            <Button onClick={resetGame} variant="outline">
-              <RotateCcw className="mr-2 h-4 w-4" />
+            <Button 
+              onClick={resetGame} 
+              variant="outline"
+              size={isMobile ? "sm" : "default"}
+            >
+              <RotateCcw className="mr-1 h-4 w-4" />
               Reiniciar
             </Button>
           </div>
           
           {isComplete && (
-            <div className="mt-4 p-4 rounded-2xl bg-gradient-to-r from-green-500 to-green-600 text-white">
-              <p className="text-2xl font-bold">
+            <div className="mt-3 p-3 rounded-2xl bg-gradient-to-r from-green-500 to-green-600 text-white">
+              <p className="text-lg sm:text-2xl font-bold">
                 🎉 Parabéns! Puzzle Completo! 🎉
               </p>
             </div>
           )}
         </div>
 
-        {/* Animação de Estrelas */}
-        {showStars && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="bg-white rounded-3xl p-8">
-              <h2 className="text-3xl font-bold text-center mb-6">Parabéns! 🎉</h2>
-              <div className="flex gap-4 justify-center">
-                {[1, 2, 3].map((starNum) => (
-                  <Star
-                    key={starNum}
-                    className={`h-16 w-16 transition-all duration-500 ${
-                      starNum <= earnedStars 
-                        ? 'text-yellow-500 fill-yellow-500 scale-110' 
-                        : 'text-gray-300 scale-90'
+        {/* Dialog de Parabéns */}
+        <Dialog open={showCongratulations} onOpenChange={setShowCongratulations}>
+          <DialogContent className="max-w-[90vw] sm:max-w-lg mx-auto my-4">
+            <DialogHeader className="pb-2">
+              <DialogTitle className="text-lg sm:text-2xl text-center">
+                🎉 Parabéns, {progress.playerName}!
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-3 max-h-[65vh] overflow-y-auto px-1">
+              <p className="text-center text-sm text-gray-600">
+                Você completou {currentPuzzle.title}!
+              </p>
+
+              <div className="flex justify-center gap-1">
+                {[...Array(3)].map((_, i) => (
+                  <Star 
+                    key={i} 
+                    className={`h-8 w-8 ${
+                      i < earnedStars 
+                        ? 'text-yellow-500 fill-yellow-500' 
+                        : 'text-gray-300'
                     }`}
                   />
                 ))}
               </div>
-              <p className="text-center mt-4 text-lg">
-                {earnedStars === 3 && "Perfeito! Você é incrível!"}
-                {earnedStars === 2 && "Muito bem! Continue assim!"}
-                {earnedStars === 1 && "Bom trabalho! Tente ser mais rápido!"}
-              </p>
+
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <p className="text-xs font-medium text-blue-600 mb-1">
+                  ✨ Versículo para Meditar:
+                </p>
+                <p className="text-xs italic text-center">
+                  "{currentPuzzle.verse}"
+                </p>
+                <p className="text-xs text-center mt-1 text-gray-500">
+                  - {currentPuzzle.reference}
+                </p>
+              </div>
             </div>
-          </div>
-        )}
 
-        {/* Dialog de Parabéns */}
-       <Dialog open={showCongratulations} onOpenChange={setShowCongratulations}>
-  <DialogContent className="max-w-[95vw] w-full sm:max-w-lg mx-2">
-    <DialogHeader>
-      <DialogTitle className="text-lg sm:text-2xl text-center flex items-center justify-center gap-2">
-        <span>🎉</span>
-        <span>Parabéns, {progress.playerName}!</span>
-      </DialogTitle>
-    </DialogHeader>
-    
-    <div className="space-y-3 max-h-[70vh] overflow-y-auto">
-      {/* Texto de conclusão */}
-      <p className="text-center text-sm sm:text-base text-gray-600">
-        Você completou {currentPuzzle.title}!
-      </p>
-
-      {/* Estrelas */}
-      <div className="flex justify-center gap-1">
-        {[...Array(3)].map((_, i) => (
-          <Star 
-            key={i} 
-            className={`h-8 w-8 sm:h-10 sm:w-10 ${
-              i < earnedStars 
-                ? 'text-yellow-500 fill-yellow-500' 
-                : 'text-gray-300'
-            }`}
-          />
-        ))}
-      </div>
-
-      {/* Versículo - MENOR NO MOBILE */}
-      <Card className="p-3 bg-blue-50">
-        <p className="text-xs sm:text-sm font-medium text-blue-600 mb-1">
-          ✨ Versículo para Meditar:
-        </p>
-        <p className="text-xs sm:text-sm italic text-center">
-          "{currentPuzzle.verse}"
-        </p>
-        <p className="text-xs text-center mt-1 text-gray-600">
-          - {currentPuzzle.reference}
-        </p>
-      </Card>
-
-      {/* Dica para pais - OPCIONAL, ESCONDIDA NO MOBILE */}
-      <div className="hidden sm:block bg-gray-50 p-2 rounded text-xs">
-        <strong>Para os pais:</strong> Converse com seu filho sobre esta história!
-      </div>
-
-      {/* Botões - LAYOUT MOBILE */}
-      <div className="grid gap-2 pt-2">
-        {/* Próxima História - PRINCIPAL */}
-        {currentPuzzleIndex < puzzleImages.length - 1 && (
-          <Button 
-            onClick={goToNextPuzzle}
-            className="w-full bg-green-500 hover:bg-green-600 text-white"
-            size="lg"
-          >
-            Próxima História →
-          </Button>
-        )}
-        
-        {/* Jogar Novamente */}
-        <Button 
-          onClick={resetGame}
-          variant="outline"
-          className="w-full"
-        >
-          <RotateCcw className="mr-2 h-4 w-4" />
-          Jogar Novamente
-        </Button>
-        
-        {/* Menu - SEMPRE VISÍVEL */}
-        <Button 
-          onClick={() => {
-            setShowCongratulations(false);
-            goToPuzzleSelection();
-          }}
-          variant="ghost"
-          className="w-full"
-        >
-          ← Menu Principal
-        </Button>
-      </div>
-    </div>
-  </DialogContent>
-</Dialog>
+            <div className="grid gap-2 pt-3 border-t">
+              {currentPuzzleIndex < puzzleImages.length - 1 && (
+                <Button 
+                  onClick={goToNextPuzzle}
+                  className="w-full bg-green-500 hover:bg-green-600"
+                >
+                  Próxima História <ChevronRight className="ml-1 h-4 w-4" />
+                </Button>
+              )}
+              
+              <div className="grid grid-cols-2 gap-2">
+                <Button 
+                  onClick={resetGame}
+                  variant="outline"
+                  size="sm"
+                >
+                  <RotateCcw className="mr-1 h-3 w-3" />
+                  Repetir
+                </Button>
+                
+                <Button 
+                  onClick={() => {
+                    setShowCongratulations(false);
+                    goToPuzzleSelection();
+                  }}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Home className="mr-1 h-3 w-3" />
+                  Menu
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Dialog Final */}
         <Dialog open={showNextPuzzleDialog} onOpenChange={setShowNextPuzzleDialog}>
