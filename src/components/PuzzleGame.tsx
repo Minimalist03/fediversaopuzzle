@@ -53,6 +53,7 @@ const PuzzleGame = () => {
   const [earnedStars, setEarnedStars] = useState(0);
   const [showWelcome, setShowWelcome] = useState(!progress.playerName);
   const [showParentDashboard, setShowParentDashboard] = useState(false);
+  const [mobileView, setMobileView] = useState<'board' | 'pieces'>('board');
   
   // Sons
   const { playSuccessSound, playPieceDropSound, playCompletionSound } = useSoundEffects();
@@ -90,14 +91,21 @@ const PuzzleGame = () => {
   }, [gameStarted, isComplete, startTime]);
 
   // Tamanhos otimizados por dispositivo
-  const getPieceSize = () => {
-    const width = window.innerWidth;
-    // Tamanhos menores para mobile
-    if (width <= 375) return 75;
-    if (width < 480) return 80;
-    if (width < 768) return 90;
-    return 110;
-  };
+const getPieceSize = () => {
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  
+  // Calcula baseado na menor dimensão disponível
+  const availableSize = Math.min(width - 40, height - 300);
+  const optimalSize = Math.floor(availableSize / 3.2);
+  
+  // Tamanhos maiores e mais confortáveis
+  if (width <= 375) return Math.min(95, optimalSize);
+  if (width <= 414) return Math.min(105, optimalSize);
+  if (width <= 480) return Math.min(115, optimalSize);
+  if (width < 768) return Math.min(120, optimalSize);
+  return 120;
+};
   
   const pieceSize = getPieceSize();
 
@@ -648,23 +656,131 @@ const PuzzleGame = () => {
           </div>
         </div>
 
-        {/* Área do jogo - LAYOUT MOBILE OTIMIZADO */}
-        <div className={`${isMobile ? 'flex flex-col gap-3' : 'flex flex-col lg:flex-row gap-6 items-center justify-center'}`}>
-          {/* Tabuleiro - AJUSTADO */}
-          <Card className="p-2 sm:p-4 mx-auto">
-            <h2 className="text-sm sm:text-lg font-semibold text-center mb-2 sm:mb-4 text-primary">
-              Monte aqui! 🧩
-            </h2>
-            <div className="bg-yellow-50 p-2 sm:p-4 rounded-xl inline-block mx-auto">
-              <div className="grid grid-cols-3 gap-1">
-                {Array.from({ length: GRID_SIZE }, (_, row) =>
-                  Array.from({ length: GRID_SIZE }, (_, col) =>
-                    renderPuzzleSlot(row, col)
-                  )
-                )}
-              </div>
+   {/* Área do jogo - LAYOUT MOBILE OTIMIZADO */}
+{isMobile ? (
+  <>
+    {/* Botões de alternância MOBILE */}
+    <div className="flex gap-2 mb-3 sticky top-0 bg-white/90 backdrop-blur z-40 p-2 rounded-lg">
+      <Button
+        onClick={() => setMobileView('board')}
+        variant={mobileView === 'board' ? 'default' : 'outline'}
+        size="sm"
+        className="flex-1"
+      >
+        🧩 Tabuleiro
+        {pieces.filter(p => p.isPlaced).length > 0 && 
+          ` (${pieces.filter(p => p.isPlaced).length}/9)`}
+      </Button>
+      <Button
+        onClick={() => setMobileView('pieces')}
+        variant={mobileView === 'pieces' ? 'default' : 'outline'}
+        size="sm"
+        className="flex-1"
+      >
+        🎯 Peças
+        {pieces.filter(p => !p.isPlaced).length > 0 && 
+          ` (${pieces.filter(p => !p.isPlaced).length})`}
+      </Button>
+    </div>
+
+    {/* Conteúdo alternado MOBILE */}
+    <div className="relative" style={{ minHeight: `${pieceSize * 3 + 100}px` }}>
+      {/* Tabuleiro */}
+      <div className={`${mobileView !== 'board' ? 'hidden' : ''}`}>
+        <Card className="p-3 mx-auto max-w-fit">
+          <div className="bg-yellow-50 p-3 rounded-xl">
+            <div className="grid grid-cols-3 gap-1">
+              {Array.from({ length: GRID_SIZE }, (_, row) =>
+                Array.from({ length: GRID_SIZE }, (_, col) =>
+                  renderPuzzleSlot(row, col)
+                )
+              )}
             </div>
-          </Card>
+          </div>
+          <p className="text-center text-xs text-gray-500 mt-2">
+            Arraste as peças para cá
+          </p>
+        </Card>
+      </div>
+
+      {/* Peças disponíveis */}
+      <div className={`${mobileView !== 'pieces' ? 'hidden' : ''}`}>
+        <Card className="p-3">
+          <div className="grid grid-cols-3 gap-2 max-h-[60vh] overflow-y-auto">
+            {pieces.filter(p => !p.isPlaced).map(piece => (
+              <div key={piece.id} className="flex justify-center">
+                {renderPuzzlePiece(piece)}
+              </div>
+            ))}
+            
+            {pieces.filter(p => !p.isPlaced).length === 0 && (
+              <div className="col-span-3 text-center py-8">
+                <p className="text-2xl mb-2">🎯</p>
+                <p className="text-sm">Todas as peças foram colocadas!</p>
+                <Button 
+                  onClick={() => setMobileView('board')}
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                >
+                  Ver Tabuleiro
+                </Button>
+              </div>
+            )}
+          </div>
+          <p className="text-center text-xs text-gray-500 mt-2">
+            Segure e arraste para o tabuleiro
+          </p>
+        </Card>
+      </div>
+    </div>
+  </>
+) : (
+  /* DESKTOP/TABLET: Layout lado a lado (mantém o original) */
+  <div className="flex flex-col lg:flex-row gap-6 items-center justify-center">
+    {/* Tabuleiro */}
+    <Card className="p-2 sm:p-4 mx-auto">
+      <h2 className="text-sm sm:text-lg font-semibold text-center mb-2 sm:mb-4 text-primary">
+        Monte aqui! 🧩
+      </h2>
+      <div className="bg-yellow-50 p-2 sm:p-4 rounded-xl inline-block mx-auto">
+        <div className="grid grid-cols-3 gap-1">
+          {Array.from({ length: GRID_SIZE }, (_, row) =>
+            Array.from({ length: GRID_SIZE }, (_, col) =>
+              renderPuzzleSlot(row, col)
+            )
+          )}
+        </div>
+      </div>
+    </Card>
+    
+    {/* Paleta de peças */}
+    <Card className="p-2 w-full">
+      <h2 className="text-sm font-semibold text-center mb-2 text-primary">
+        Peças disponíveis ({pieces.filter(p => !p.isPlaced).length} de 9)
+      </h2>
+      
+      <div className="bg-gray-50 rounded-lg p-2 max-h-[400px] overflow-y-auto">
+        <div className="grid grid-cols-3 gap-2">
+          {pieces
+            .filter(piece => !piece.isPlaced)
+            .map(piece => (
+              <div key={piece.id} className="flex justify-center">
+                {renderPuzzlePiece(piece)}
+              </div>
+            ))}
+          
+          {pieces.filter(p => !p.isPlaced).length === 0 && (
+            <div className="col-span-3 text-center py-4">
+              <p className="text-lg">✅</p>
+              <p className="text-xs">Organize as peças no lugar correto!</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </Card>
+  </div>
+)}
 
           {/* Paleta de peças - CORRIGIDA */}
           <Card className="p-2 w-full">
