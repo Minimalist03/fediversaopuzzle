@@ -2,77 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design system para quebra-cabeça infantil - Arca de Noé
-Cores inspiradas em jogos educativos clássicos
-*/
-
 @layer base {
   :root {
-    /* Pastel children's book theme colors */
     --background: 50 100% 97%;
     --foreground: 230 15% 25%;
-
-    /* Game board and card colors */
     --card: 45 100% 96%;
     --card-foreground: 230 15% 25%;
     --game-board: 60 80% 92%;
     --game-piece: 200 60% 88%;
-
-    /* Soft pastel primary colors */
     --primary: 340 75% 75%;
     --primary-foreground: 340 10% 15%;
     --primary-glow: 340 65% 85%;
-
-    /* Gentle secondary colors */
     --secondary: 200 60% 80%;
     --secondary-foreground: 200 15% 25%;
-    
-    /* Accent colors for celebration */
     --accent: 150 50% 75%;
     --accent-foreground: 150 15% 25%;
     --celebration: 280 60% 80%;
-    
-    /* Success and feedback colors */
     --success: 120 50% 70%;
     --success-foreground: 120 10% 15%;
     --warning: 40 70% 75%;
-    
-    /* Soft muted tones */
     --muted: 60 80% 94%;
     --muted-foreground: 230 10% 50%;
-
-    /* UI elements */
     --border: 45 40% 88%;
     --input: 45 40% 88%;
     --ring: 340 75% 75%;
-
-    /* Rounded corners for kid-friendly design */
     --radius: 1rem;
-
-    /* Pastel gradients for children's book feel */
-    --gradient-rainbow: linear-gradient(135deg, 
-      hsl(340 75% 75%), 
-      hsl(200 60% 80%), 
-      hsl(150 50% 75%), 
-      hsl(280 60% 80%));
-    --gradient-sky: linear-gradient(180deg, 
-      hsl(200 60% 90%), 
-      hsl(50 100% 97%));
-    --gradient-piece: linear-gradient(145deg, 
-      hsl(45 100% 96%), 
-      hsl(200 60% 88%));
-    
-    /* Soft shadows for gentle look */
-    --shadow-soft: 0 4px 20px hsl(340 30% 85%);
-    --shadow-piece: 0 2px 10px hsl(200 30% 80%);
-    --shadow-success: 0 0 30px hsl(120 50% 70% / 0.5);
-    
-    /* Animation transitions */
-    --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    --transition-smooth: all 0.2s ease-out;
   }
-
-  /* Mantemos apenas modo claro para simplicidade infantil */
 }
 
 @layer base {
@@ -82,294 +37,161 @@ Cores inspiradas em jogos educativos clássicos
 
   body {
     @apply text-foreground min-h-screen;
-    background: var(--gradient-sky);
-    font-family: 'Comic Sans MS', 'Trebuchet MS', cursive, sans-serif;
+    background: linear-gradient(180deg, hsl(200 60% 90%), hsl(50 100% 97%));
   }
 }
 
-@layer components {
-  /* Game piece styles */
-  .puzzle-piece {
-    @apply rounded-xl shadow-lg border-2 touch-none select-none;
-    background: var(--gradient-piece);
-    border-color: hsl(var(--border));
-    box-shadow: var(--shadow-piece);
-    transition: var(--transition-smooth);
-    -webkit-user-select: none;
-    -webkit-touch-callout: none;
-  }
-  
-  .puzzle-piece:hover {
-    @apply scale-105;
-    box-shadow: var(--shadow-soft);
-  }
-  
-  .puzzle-piece:active {
-    transform: scale(1.08);
-    border-color: hsl(var(--primary));
-  }
-  
-  .puzzle-piece.dragging {
-    @apply scale-110 rotate-2;
-    z-index: 50;
-    opacity: 0.7;
-  }
-  
-  .puzzle-piece.correct {
-    @apply border-success/50;
-    box-shadow: var(--shadow-success);
-    animation: bounce-success 0.5s ease-out;
-  }
-  
-  /* Mobile specific styles */
-  @media (max-width: 768px) {
-    .puzzle-piece {
-      @apply rounded-lg border;
-      box-shadow: 0 2px 8px hsl(200 30% 80%);
-    }
-    
-    .puzzle-piece:hover {
-      @apply scale-100;
-    }
-    
-    .puzzle-piece:active {
-      @apply scale-105;
-      border-color: hsl(var(--primary));
-      box-shadow: 0 4px 12px hsl(var(--primary) / 0.3);
-    }
-    
-    .puzzle-piece.dragging {
-      @apply scale-105 rotate-1;
-      opacity: 0.8;
-    }
-  }
-  
-  /* Game board slot */
+/* ===== MOBILE OPTIMIZATIONS ===== */
+
+/* Touch-friendly pieces */
+.puzzle-piece {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  position: relative;
+  cursor: grab;
+  transition: transform 0.2s;
+}
+
+.puzzle-piece:active {
+  cursor: grabbing;
+  z-index: 1000;
+  transform: scale(1.05);
+}
+
+.puzzle-slot {
+  touch-action: none;
+  transition: all 0.2s;
+}
+
+.puzzle-slot.drag-over {
+  background-color: rgba(74, 222, 128, 0.2);
+  border-color: #10b981;
+  border-style: solid;
+  transform: scale(1.02);
+}
+
+/* Responsive sizes - Ajustados para mobile */
+@media (max-width: 375px) {
+  .puzzle-piece,
   .puzzle-slot {
-    @apply rounded-xl border-2 border-dashed touch-none;
-    background-color: hsl(var(--card) / 0.3);
-    border-color: hsl(var(--primary) / 0.4);
-    transition: var(--transition-smooth);
-  }
-  
-  .puzzle-slot.drag-over {
-    @apply border-solid scale-105;
-    border-color: hsl(var(--primary));
-    background-color: hsl(var(--primary) / 0.15);
-    box-shadow: 0 0 15px hsl(var(--primary) / 0.3);
-  }
-  
-  .puzzle-slot.filled {
-    border-color: hsl(var(--success));
-    background-color: hsl(var(--success) / 0.15);
-  }
-  
-  /* Mobile optimizations */
-  @media (max-width: 768px) {
-    .puzzle-slot {
-      @apply rounded-lg border;
-    }
-    
-    .puzzle-slot.drag-over {
-      transform: scale(1.02);
-      box-shadow: 0 0 10px hsl(var(--primary) / 0.4);
-    }
-  }
-  
-  /* Celebration effects */
-  .celebration {
-    background: var(--gradient-rainbow);
-    background-size: 200% 200%;
-    animation: rainbow-flow 2s ease-in-out infinite;
-  }
-  
-  /* Game container */
-  .game-container {
-    @apply p-3 md:p-4 lg:p-6 rounded-2xl;
-    background: hsl(var(--card));
-    border: 2px solid hsl(var(--border));
-    box-shadow: var(--shadow-soft);
-  }
-  
-  @media (max-width: 768px) {
-    .game-container {
-      @apply p-3 rounded-xl;
-      border-width: 1px;
-    }
-  }
-
-  /* Puzzle card for selection */
-  .puzzle-card {
-    @apply rounded-2xl border-2;
-    background: hsl(var(--card));
-    border-color: hsl(var(--border));
-    box-shadow: var(--shadow-soft);
-  }
-
-  .puzzle-card:hover {
-    border-color: hsl(var(--primary));
-    box-shadow: 0 8px 30px hsl(var(--primary) / 0.2);
+    width: 75px !important;
+    height: 75px !important;
   }
 }
 
-@layer utilities {
-  /* Custom animations */
-  @keyframes bounce-success {
-    0%, 20%, 53%, 80%, 100% {
-      transform: translate3d(0,0,0) scale(1);
-    }
-    40%, 43% {
-      transform: translate3d(0,-15px,0) scale(1.1);
-    }
-    70% {
-      transform: translate3d(0,-7px,0) scale(1.05);
-    }
-    90% {
-      transform: translate3d(0,-2px,0) scale(1.02);
-    }
-  }
-  
-  @keyframes rainbow-flow {
-    0%, 100% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-  }
-  
-  @keyframes wiggle {
-    0%, 7% {
-      transform: rotateZ(0);
-    }
-    15% {
-      transform: rotateZ(-15deg);
-    }
-    20% {
-      transform: rotateZ(10deg);
-    }
-    25% {
-      transform: rotateZ(-10deg);
-    }
-    30% {
-      transform: rotateZ(6deg);
-    }
-    35% {
-      transform: rotateZ(-4deg);
-    }
-    40%, 100% {
-      transform: rotateZ(0);
-    }
-  }
-  
-  .animate-wiggle {
-    animation: wiggle 1s ease-in-out;
+@media (min-width: 376px) and (max-width: 480px) {
+  .puzzle-piece,
+  .puzzle-slot {
+    width: 80px !important;
+    height: 80px !important;
   }
 }
-/* ========== CORREÇÕES MOBILE PUZZLE ========== */
 
-/* Container das peças */
+@media (min-width: 481px) and (max-width: 768px) {
+  .puzzle-piece,
+  .puzzle-slot {
+    width: 90px !important;
+    height: 90px !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .puzzle-piece,
+  .puzzle-slot {
+    width: 110px !important;
+    height: 110px !important;
+  }
+}
+
+/* Dialog responsivo */
+[role="dialog"] {
+  max-height: 95vh;
+  max-width: 95vw;
+}
+
+[role="dialog"][data-state="open"] {
+  z-index: 9999;
+}
+
+@media (max-width: 640px) {
+  [role="dialog"] {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+  }
+  
+  [role="dialog"] > div {
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+}
+
+/* Previne zoom acidental no iOS */
+input, button, select, textarea {
+  font-size: 16px !important;
+  -webkit-appearance: none;
+}
+
+/* Container de peças com scroll */
 .pieces-container {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  padding: 8px;
   max-height: 400px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  padding: 8px;
   background: #f9fafb;
   border-radius: 8px;
 }
 
-/* Peça individual */
-.puzzle-piece {
-  position: relative !important;
-  border: 2px solid transparent;
-  transition: all 0.2s;
-  cursor: grab;
-  border-radius: 8px;
+/* Toasts no canto, pequenos */
+[data-sonner-toaster] {
+  position: fixed !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  z-index: 9999 !important;
 }
 
-.puzzle-piece:active {
-  z-index: 1000 !important;
-  transform: scale(1.1);
-  border-color: #4CAF50;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-  cursor: grabbing;
+[data-sonner-toast] {
+  max-width: 250px !important;
+  font-size: 13px !important;
 }
 
-/* Slot do puzzle */
-.puzzle-slot {
-  border: 3px dashed #e5e7eb;
-  transition: all 0.2s;
-  background: white;
+/* Animações suaves */
+@keyframes pulse-success {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
 }
 
-.puzzle-slot.drag-over {
-  background-color: rgba(74, 222, 128, 0.2) !important;
-  border-color: #10b981 !important;
-  border-style: solid !important;
-  transform: scale(1.05);
+.correct-piece {
+  animation: pulse-success 0.5s;
+  border-color: #10b981;
 }
 
-/* Correções específicas para mobile */
-@media (max-width: 640px) {
-  .pieces-container {
-    grid-template-columns: repeat(3, minmax(100px, 1fr));
-    max-height: 350px;
-  }
-  
+/* Remove sombras pesadas no mobile */
+@media (max-width: 768px) {
   .puzzle-piece {
-    min-width: 100px !important;
-    min-height: 100px !important;
-    touch-action: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   }
   
-  .puzzle-slot {
-    border-width: 2px;
-  }
-  
-  /* Dialog responsivo */
-  [role="dialog"] {
-    margin: 1rem !important;
-  }
-  
-  /* Previne zoom no iOS */
-  input, button, textarea, select {
-    font-size: 16px !important;
+  .puzzle-piece:active {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
   }
 }
-/* Correções Mobile Puzzle */
+
+/* Scroll suave */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Botões menores no mobile */
 @media (max-width: 480px) {
-  .puzzle-slot {
-    width: 90px !important;
-    height: 90px !important;
-  }
-  
-  .puzzle-piece {
-    width: 90px !important;
-    height: 90px !important;
-    flex-shrink: 0;
-  }
-  
-  .overflow-x-auto {
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-  }
-}
-/* Dialog Mobile Fix */
-@media (max-width: 640px) {
-  [role="dialog"] {
-    position: fixed !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    max-height: 90vh !important;
-    margin: 0 !important;
-  }
-  
-  [role="dialog"] > div {
-    max-height: calc(90vh - 2rem);
-    overflow-y: auto;
+  button {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
   }
 }
