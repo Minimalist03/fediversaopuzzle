@@ -1,73 +1,38 @@
-# Welcome to your Lovable project
+# 🧩 Quebra-Cabeças Bíblicos
 
-## Project info
+Um jogo educativo cristão desenvolvido pela **Fé & Diversão** para ensinar histórias bíblicas de forma divertida e interativa.
 
-**URL**: https://lovable.dev/projects/efbc6ecd-ca83-49a1-877b-48852114894d
+## 📖 Sobre o Projeto
 
-## How can I edit this code?
+10 histórias bíblicas transformadas em quebra-cabeças educativos:
+- A Arca de Noé
+- Davi e Golias
+- Jonas e a Baleia
+- Daniel na Cova dos Leões
+- E muito mais!
 
-There are several ways of editing your application.
+## 🎯 Características
 
-**Use Lovable**
+- ✅ 100% online - jogue no navegador
+- ✅ Responsivo - funciona em celular, tablet e PC
+- ✅ Sistema de progresso e estrelas
+- ✅ Versículos para meditação
+- ✅ Área de acompanhamento para pais
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/efbc6ecd-ca83-49a1-877b-48852114894d) and start prompting.
+## 👨‍👩‍👧‍👦 Ideal Para
 
-Changes made via Lovable will be committed automatically to this repo.
+- Crianças de 4 a 12 anos
+- Escolas bíblicas
+- Ministério infantil
+- Pais cristãos
+- Educação em casa
 
-**Use your preferred IDE**
+## 📞 Contato
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+**Fé & Diversão**  
+Site: [feediversao.com.br](https://feediversao.com.br)  
+Email: contato@feediversao.com.br
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+---
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/efbc6ecd-ca83-49a1-877b-48852114894d) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+© 2024 Fé & Diversão - Todos os direitos reservados
