@@ -960,7 +960,8 @@ const getPieceSize = () => {
           />
         )}
       </div>
-    </div>
+</div>
+)}
   );
 };
 
