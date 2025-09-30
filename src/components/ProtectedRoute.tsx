@@ -2,7 +2,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Lock } from 'lucide-react';
+import { Loader as Loader2, Lock } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
