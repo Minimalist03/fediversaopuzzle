@@ -8,14 +8,14 @@ const corsHeaders = {
 
 interface PaymentWebhookPayload {
   user_email: string;
-  user_name: string;
+  user_name?: string;
   user_phone?: string;
-  amount: number;
+  amount?: number;
   currency?: string;
-  payment_method: 'pix' | 'credit_card' | 'boleto' | 'debit_card';
-  payment_provider: 'stripe' | 'mercadopago' | 'pagseguro' | 'manual';
+  payment_method?: 'pix' | 'credit_card' | 'boleto' | 'debit_card';
+  payment_provider?: 'stripe' | 'mercadopago' | 'pagseguro' | 'manual';
   provider_transaction_id?: string;
-  plan_type: 'monthly' | 'yearly' | 'lifetime';
+  plan_type?: 'monthly' | 'yearly' | 'lifetime';
   metadata?: Record<string, any>;
 }
 
@@ -36,16 +36,23 @@ Deno.serve(async (req: Request) => {
 
     console.log('Payment webhook received:', payload);
 
-    // Validar dados obrigatórios
-    if (!payload.user_email || !payload.user_name || !payload.amount || !payload.plan_type) {
+    // Validar apenas email obrigatório
+    if (!payload.user_email) {
       return new Response(
-        JSON.stringify({ error: 'Dados incompletos: user_email, user_name, amount e plan_type são obrigatórios' }),
+        JSON.stringify({ error: 'O campo user_email é obrigatório' }),
         {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
+
+    // Valores padrão
+    const userName = payload.user_name || payload.user_email.split('@')[0];
+    const planType = payload.plan_type || 'lifetime';
+    const amount = payload.amount || 0;
+    const paymentMethod = payload.payment_method || 'manual';
+    const paymentProvider = payload.payment_provider || 'manual';
 
     // 1. Verificar se usuário existe, senão criar
     let userId: string;
@@ -65,7 +72,7 @@ Deno.serve(async (req: Request) => {
         password: randomPassword,
         email_confirm: true,
         user_metadata: {
-          full_name: payload.user_name,
+          full_name: userName,
           phone: payload.user_phone || '',
         }
       });
@@ -99,11 +106,11 @@ Deno.serve(async (req: Request) => {
     let expiresAt: string | null = null;
     const startedAt = new Date().toISOString();
 
-    if (payload.plan_type === 'monthly') {
+    if (planType === 'monthly') {
       const expires = new Date();
       expires.setMonth(expires.getMonth() + 1);
       expiresAt = expires.toISOString();
-    } else if (payload.plan_type === 'yearly') {
+    } else if (planType === 'yearly') {
       const expires = new Date();
       expires.setFullYear(expires.getFullYear() + 1);
       expiresAt = expires.toISOString();
@@ -116,7 +123,7 @@ Deno.serve(async (req: Request) => {
       .insert({
         user_id: userId,
         status: 'active',
-        plan_type: payload.plan_type,
+        plan_type: planType,
         started_at: startedAt,
         expires_at: expiresAt,
       })
@@ -142,10 +149,10 @@ Deno.serve(async (req: Request) => {
       .insert({
         user_id: userId,
         subscription_id: subscription.id,
-        amount: payload.amount,
+        amount: amount,
         currency: payload.currency || 'BRL',
-        payment_method: payload.payment_method,
-        payment_provider: payload.payment_provider,
+        payment_method: paymentMethod,
+        payment_provider: paymentProvider,
         provider_transaction_id: payload.provider_transaction_id || null,
         status: 'completed',
         metadata: payload.metadata || {},
@@ -169,7 +176,7 @@ Deno.serve(async (req: Request) => {
           subscription_id: subscription.id,
           transaction_id: transaction?.id,
           email: payload.user_email,
-          plan_type: payload.plan_type,
+          plan_type: planType,
           expires_at: expiresAt,
         },
       }),

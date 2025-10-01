@@ -1,20 +1,28 @@
 # Sistema de Controle de Acesso por Compra
 
-Este documento explica como integrar o sistema de liberação automática de acesso após compra.
+## 🎯 VERSÃO SIMPLIFICADA - Use Apenas o Email!
 
-## Visão Geral
+Agora é **SUPER SIMPLES**: envie apenas o email do comprador e pronto!
 
-O sistema permite que quando um cliente comprar seu produto, ele receba automaticamente:
-- Uma conta de usuário criada
-- Email com link para definir senha
-- Acesso liberado imediatamente ao jogo
-- Assinatura ativa conforme o plano comprado
+```bash
+curl -X POST https://zjjrpqhhehvgezgjhcgd.supabase.co/functions/v1/payment-webhook \
+  -H "Content-Type: application/json" \
+  -d '{"user_email": "cliente@email.com"}'
+```
+
+O sistema cria automaticamente:
+- ✅ Conta do usuário
+- ✅ Email com link para definir senha
+- ✅ Acesso vitalício (lifetime) liberado
+- ✅ Tudo funcionando em segundos
 
 ## URL do Webhook
 
 ```
 https://zjjrpqhhehvgezgjhcgd.supabase.co/functions/v1/payment-webhook
 ```
+
+---
 
 ## Como Funciona
 
