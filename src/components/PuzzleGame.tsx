@@ -1,15 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { puzzleImages, PuzzleImageData } from "@/data/puzzleImages";
 import { useGameProgress } from "@/hooks/useGameProgress";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
-import { Trophy, Clock, Target, Star, Lock, Home, RotateCcw, ChevronRight, Share2, Sparkles } from "lucide-react";
-import Confetti from "react-confetti";
+import { Trophy, Clock, Target, Star, Lock, Home, RotateCcw, ChevronRight, Share2 } from "lucide-react";
 
+// ==================== INTERFACES ====================
 interface PuzzlePiece {
   id: number;
   row: number;
@@ -18,7 +18,9 @@ interface PuzzlePiece {
   isPlaced: boolean;
 }
 
+// ==================== COMPONENTE PRINCIPAL ====================
 const PuzzleGame = () => {
+  // Estados básicos do jogo
   const [pieces, setPieces] = useState<PuzzlePiece[]>([]);
   const [draggedPiece, setDraggedPiece] = useState<PuzzlePiece | null>(null);
   const [isComplete, setIsComplete] = useState(false);
@@ -29,16 +31,12 @@ const PuzzleGame = () => {
   const [touchStartPos, setTouchStartPos] = useState<{ x: number; y: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragPreview, setDragPreview] = useState<{ x: number; y: number; piece: PuzzlePiece } | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
-  const [startTime, setStartTime] = useState<number>(0);
-  const [elapsedTime, setElapsedTime] = useState(0);
-  const [moves, setMoves] = useState(0);
-  const [earnedStars, setEarnedStars] = useState(0);
-  const [showWelcome, setShowWelcome] = useState(!progress.playerName);
-  const [showParentDashboard, setShowParentDashboard] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   
+  // Estados de responsividade
+  const [isMobile, setIsMobile] = useState(false);
+  const [deviceType, setDeviceType] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
+  
+  // Sistema de progresso
   const { 
     progress, 
     savePuzzleCompletion, 
@@ -48,21 +46,39 @@ const PuzzleGame = () => {
     getStats
   } = useGameProgress();
   
+  // Estados para tempo e performance
+  const [startTime, setStartTime] = useState<number>(0);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [moves, setMoves] = useState(0);
+  const [earnedStars, setEarnedStars] = useState(0);
+  const [showWelcome, setShowWelcome] = useState(!progress.playerName);
+  const [showParentDashboard, setShowParentDashboard] = useState(false);
+  
+  // Sons
   const { playSuccessSound, playPieceDropSound, playCompletionSound } = useSoundEffects();
 
   const currentPuzzle: PuzzleImageData = puzzleImages[currentPuzzleIndex];
   const GRID_SIZE = 3;
 
+  // Detecta tipo de dispositivo
   useEffect(() => {
-    const handleResize = () => {
-      setWindowSize({ width: window.innerWidth, height: window.innerHeight });
-      setIsMobile(window.innerWidth < 768);
+    const checkDevice = () => {
+      const width = window.innerWidth;
+      setIsMobile(width < 768);
+      if (width < 480) {
+        setDeviceType('mobile');
+      } else if (width < 768) {
+        setDeviceType('tablet');
+      } else {
+        setDeviceType('desktop');
+      }
     };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
+    return () => window.removeEventListener('resize', checkDevice);
   }, []);
 
+  // Timer
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (gameStarted && !isComplete) {
@@ -73,34 +89,45 @@ const PuzzleGame = () => {
     return () => clearInterval(interval);
   }, [gameStarted, isComplete, startTime]);
 
+  // Tamanhos otimizados por dispositivo
   const getPieceSize = () => {
     const width = window.innerWidth;
+    const height = window.innerHeight;
+    
     if (width <= 480) {
+      // Mobile: calcula para caber 2 grids 3x3 na tela
       const padding = 48;
       const gaps = 16;
-      const extraSpace = 250;
+      const extraSpace = 250; // header, textos, botões
+      
       const maxWidth = Math.floor((width - padding - gaps) / 3.2);
-      const maxHeight = Math.floor((window.innerHeight - extraSpace) / 6.5);
+      const maxHeight = Math.floor((height - extraSpace) / 6.5);
       const optimalSize = Math.min(maxWidth, maxHeight);
+      
       if (width <= 360) return Math.max(65, Math.min(70, optimalSize));
       if (width <= 375) return Math.max(68, Math.min(73, optimalSize));
       if (width <= 414) return Math.max(72, Math.min(78, optimalSize));
       return Math.max(75, Math.min(82, optimalSize));
     }
+    
     if (width < 768) return 90;
     return 100;
   };
 
   const pieceSize = getPieceSize();
 
+  // Formatar tempo
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Inicializa as peças do quebra-cabeça
   const initializePuzzle = useCallback(() => {
     const newPieces: PuzzlePiece[] = [];
+    
+    // Criar 9 peças (3x3)
     for (let row = 0; row < GRID_SIZE; row++) {
       for (let col = 0; col < GRID_SIZE; col++) {
         newPieces.push({
@@ -112,16 +139,19 @@ const PuzzleGame = () => {
         });
       }
     }
+    
     const shuffledPieces = [...newPieces].sort(() => Math.random() - 0.5);
+    console.log('Total de peças criadas:', shuffledPieces.length); // Debug
+    
     setPieces(shuffledPieces);
     setIsComplete(false);
     setGameStarted(true);
     setStartTime(Date.now());
     setElapsedTime(0);
     setMoves(0);
-    setShowConfetti(false);
   }, [currentPuzzle]);
 
+  // Verifica se o quebra-cabeça está completo
   const checkCompletion = useCallback(() => {
     const placedPieces = pieces.filter(piece => piece.isPlaced);
     if (placedPieces.length === GRID_SIZE * GRID_SIZE) {
@@ -133,14 +163,18 @@ const PuzzleGame = () => {
       if (allCorrect && !isComplete) {
         setIsComplete(true);
         const timeSpent = Math.floor((Date.now() - startTime) / 1000);
-        const stars = savePuzzleCompletion(`puzzle-${currentPuzzleIndex}`, timeSpent, moves);
+        const stars = savePuzzleCompletion(
+          `puzzle-${currentPuzzleIndex}`, 
+          timeSpent, 
+          moves
+        );
+        
         setEarnedStars(stars);
         playCompletionSound();
-        setShowConfetti(true);
+        
         setTimeout(() => {
           setShowCongratulations(true);
-          setShowConfetti(false);
-        }, 3000);
+        }, 500);
       }
     }
   }, [pieces, isComplete, startTime, moves, currentPuzzleIndex, savePuzzleCompletion, playCompletionSound]);
@@ -149,6 +183,7 @@ const PuzzleGame = () => {
     checkCompletion();
   }, [pieces, checkCompletion]);
 
+  // Handlers de drag
   const handleDragStart = (piece: PuzzlePiece) => {
     setDraggedPiece(piece);
     setIsDragging(true);
@@ -163,19 +198,35 @@ const PuzzleGame = () => {
     e.preventDefault();
     const touch = e.touches[0];
     const rect = e.currentTarget.getBoundingClientRect();
-    setTouchStartPos({ x: touch.clientX - rect.left, y: touch.clientY - rect.top });
+    setTouchStartPos({ 
+      x: touch.clientX - rect.left, 
+      y: touch.clientY - rect.top 
+    });
     setDraggedPiece(piece);
     setIsDragging(true);
-    setDragPreview({ x: touch.clientX, y: touch.clientY, piece });
+    setDragPreview({
+      x: touch.clientX,
+      y: touch.clientY,
+      piece
+    });
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     e.preventDefault();
     if (!draggedPiece || !isDragging) return;
+    
     const touch = e.touches[0];
-    setDragPreview(prev => prev ? { ...prev, x: touch.clientX, y: touch.clientY } : null);
+    setDragPreview(prev => prev ? {
+      ...prev,
+      x: touch.clientX,
+      y: touch.clientY
+    } : null);
+    
     const element = document.elementFromPoint(touch.clientX, touch.clientY);
-    document.querySelectorAll('.puzzle-slot').forEach(slot => slot.classList.remove('drag-over'));
+    document.querySelectorAll('.puzzle-slot').forEach(slot => {
+      slot.classList.remove('drag-over');
+    });
+    
     if (element && element.classList.contains('puzzle-slot')) {
       element.classList.add('drag-over');
     }
@@ -184,9 +235,14 @@ const PuzzleGame = () => {
   const handleTouchEnd = (e: React.TouchEvent) => {
     e.preventDefault();
     if (!draggedPiece || !isDragging) return;
+    
     const touch = e.changedTouches[0];
     const element = document.elementFromPoint(touch.clientX, touch.clientY);
-    document.querySelectorAll('.puzzle-slot').forEach(slot => slot.classList.remove('drag-over'));
+    
+    document.querySelectorAll('.puzzle-slot').forEach(slot => {
+      slot.classList.remove('drag-over');
+    });
+    
     if (element && element.classList.contains('puzzle-slot')) {
       const slotKey = element.getAttribute('data-slot');
       if (slotKey) {
@@ -194,6 +250,7 @@ const PuzzleGame = () => {
         handleDrop(row, col);
       }
     }
+    
     setDraggedPiece(null);
     setIsDragging(false);
     setTouchStartPos(null);
@@ -202,10 +259,17 @@ const PuzzleGame = () => {
 
   const handleDrop = (targetRow: number, targetCol: number) => {
     if (!draggedPiece) return;
-    const existingPiece = pieces.find(p => p.isPlaced && p.row === targetRow && p.col === targetCol);
-    if (existingPiece) return;
+
+    const existingPiece = pieces.find(
+      p => p.isPlaced && p.row === targetRow && p.col === targetCol
+    );
+
+    if (existingPiece) {
+      return;
+    }
 
     setMoves(prev => prev + 1);
+
     setPieces(prevPieces => 
       prevPieces.map(piece => 
         piece.id === draggedPiece.id
@@ -214,14 +278,55 @@ const PuzzleGame = () => {
       )
     );
 
-    if (draggedPiece.correctPosition.row === targetRow && draggedPiece.correctPosition.col === targetCol) {
+    // Apenas toca o som, sem toast
+    if (draggedPiece.correctPosition.row === targetRow && 
+        draggedPiece.correctPosition.col === targetCol) {
       playSuccessSound();
     } else {
       playPieceDropSound();
     }
   };
 
-  const renderPuzzlePiece = (piece: PuzzlePiece) => {
+  const resetGame = () => {
+    setShowCongratulations(false);
+    setShowNextPuzzleDialog(false);
+    initializePuzzle();
+  };
+
+  const goToNextPuzzle = () => {
+    if (currentPuzzleIndex < puzzleImages.length - 1) {
+      setCurrentPuzzleIndex(prev => prev + 1);
+      setShowCongratulations(false);
+      setShowNextPuzzleDialog(false);
+      initializePuzzle();
+    } else {
+      setShowNextPuzzleDialog(true);
+    }
+  };
+
+  const goToPuzzleSelection = () => {
+    setGameStarted(false);
+    setShowCongratulations(false);
+    setShowNextPuzzleDialog(false);
+  };
+
+  const shareProgress = () => {
+    const stats = getStats();
+    const text = `🎉 ${progress.playerName} já completou ${stats.puzzlesCompleted} quebra-cabeças bíblicos e ganhou ${stats.totalStars} estrelas! 🌟`;
+    
+    if (navigator.share) {
+      navigator.share({
+        title: 'Quebra-Cabeças Bíblicos',
+        text: text,
+        url: window.location.href
+      });
+    } else {
+      navigator.clipboard.writeText(text);
+      toast.success('Texto copiado! Cole no WhatsApp 📱');
+    }
+  };
+
+  const renderPuzzlePiece = (piece: PuzzlePiece, isInPalette = false) => {
     const style = {
       backgroundImage: `url(${currentPuzzle.image})`,
       backgroundSize: `${pieceSize * GRID_SIZE}px ${pieceSize * GRID_SIZE}px`,
@@ -236,8 +341,8 @@ const PuzzleGame = () => {
         className={`puzzle-piece cursor-grab active:cursor-grabbing touch-none select-none 
           ${draggedPiece?.id === piece.id ? 'opacity-50' : ''} 
           ${piece.isPlaced && piece.row === piece.correctPosition.row && 
-            piece.col === piece.correctPosition.col ? 'ring-4 ring-yellow-400 animate-pulse' : ''}
-          rounded-xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-200`}
+            piece.col === piece.correctPosition.col ? 'ring-2 ring-green-500' : ''}
+          rounded-lg shadow-md hover:shadow-lg transition-all`}
         style={style}
         draggable
         onDragStart={() => handleDragStart(piece)}
@@ -250,26 +355,28 @@ const PuzzleGame = () => {
   };
 
   const renderPuzzleSlot = (row: number, col: number) => {
-    const placedPiece = pieces.find(p => p.isPlaced && p.row === row && p.col === col);
+    const placedPiece = pieces.find(
+      p => p.isPlaced && p.row === row && p.col === col
+    );
 
     return (
       <div
         key={`slot-${row}-${col}`}
         data-slot={`${row}-${col}`}
-        className={`puzzle-slot flex items-center justify-center border-4 border-dashed 
-          ${placedPiece ? 'border-transparent' : 'border-purple-300 hover:border-purple-500 hover:bg-purple-50'} 
-          rounded-xl transition-all duration-200`}
+        className={`puzzle-slot flex items-center justify-center border-2 border-dashed 
+          ${placedPiece ? 'border-transparent' : 'border-gray-300'} 
+          rounded-lg transition-all hover:bg-gray-50`}
         style={{ width: `${pieceSize}px`, height: `${pieceSize}px` }}
         onDragOver={(e) => {
           e.preventDefault();
-          e.currentTarget.classList.add('bg-green-100', 'border-green-400', 'scale-105');
+          e.currentTarget.classList.add('bg-green-50', 'border-green-400');
         }}
         onDragLeave={(e) => {
-          e.currentTarget.classList.remove('bg-green-100', 'border-green-400', 'scale-105');
+          e.currentTarget.classList.remove('bg-green-50', 'border-green-400');
         }}
         onDrop={(e) => {
           e.preventDefault();
-          e.currentTarget.classList.remove('bg-green-100', 'border-green-400', 'scale-105');
+          e.currentTarget.classList.remove('bg-green-50', 'border-green-400');
           handleDrop(row, col);
         }}
       >
@@ -278,146 +385,175 @@ const PuzzleGame = () => {
     );
   };
 
+  // Tela de Boas-Vindas SIMPLIFICADA
   if (showWelcome) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-300 to-yellow-300 flex items-center justify-center p-4">
-        <Card className="max-w-md w-full p-8 bg-white shadow-2xl border-4 border-purple-400 rounded-3xl">
-          <div className="text-center mb-8">
-            <div className="text-8xl mb-4 animate-bounce">🧩</div>
-            <h1 className="text-4xl font-black text-purple-600 mb-3 drop-shadow-lg">
+      <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100 
+                      flex items-center justify-center p-4">
+        <Card className="max-w-md w-full p-6">
+          <div className="text-center mb-6">
+            <div className="text-6xl mb-3 animate-bounce">🧩</div>
+            <h1 className="text-2xl font-bold text-gray-800">
               Quebra-Cabeças Bíblicos
             </h1>
-            <p className="text-xl text-pink-600 font-bold">
-              Diversão e aprendizado garantidos!
-            </p>
           </div>
 
-          <div className="space-y-4">
-            <Input
-              type="text"
-              placeholder="Como você se chama?"
-              className="text-2xl p-6 text-center font-bold border-4 border-purple-300 rounded-2xl focus:border-pink-400 focus:ring-4 focus:ring-pink-200"
-              maxLength={20}
-              autoFocus
-              id="nameInput"
-              onKeyPress={(e) => {
-                if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                  setPlayerName(e.currentTarget.value.trim());
-                  setShowWelcome(false);
-                  toast.success('Vamos brincar!', { duration: 2000 });
-                }
-              }}
-            />
-            
-            <Button
-              onClick={() => {
-                const input = document.getElementById('nameInput') as HTMLInputElement;
-                if (input?.value.trim()) {
-                  setPlayerName(input.value.trim());
-                  setShowWelcome(false);
-                  toast.success('Vamos brincar!', { duration: 2000 });
-                } else {
-                  toast.error('Psiu! Qual é seu nome?', { duration: 2000 });
-                }
-              }}
-              className="w-full text-2xl py-8 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 font-black rounded-2xl shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-200"
-            >
-              VAMOS LÁ!
-            </Button>
-          </div>
+          <Input
+            type="text"
+            placeholder="Seu nome..."
+            className="text-xl p-4 text-center font-bold mb-4"
+            maxLength={20}
+            autoFocus
+            id="nameInput"
+            onKeyPress={(e) => {
+              if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                setPlayerName(e.currentTarget.value.trim());
+                setShowWelcome(false);
+              }
+            }}
+          />
+          
+          <Button
+            onClick={() => {
+              const input = document.getElementById('nameInput') as HTMLInputElement;
+              if (input?.value.trim()) {
+                setPlayerName(input.value.trim());
+                setShowWelcome(false);
+              } else {
+                toast.error('Digite seu nome primeiro! ☝️');
+              }
+            }}
+            className="w-full text-lg py-6 bg-green-500 hover:bg-green-600"
+          >
+            COMEÇAR! 🎮
+          </Button>
 
-          <div className="mt-8 pt-6 border-t-4 border-purple-200">
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="bg-yellow-100 rounded-2xl p-3 border-2 border-yellow-300">
-                <div className="font-black text-3xl text-yellow-600">10</div>
-                <div className="text-sm font-bold text-yellow-700">Aventuras</div>
-              </div>
-              <div className="bg-pink-100 rounded-2xl p-3 border-2 border-pink-300">
-                <div className="font-black text-3xl text-pink-600">⭐</div>
-                <div className="text-sm font-bold text-pink-700">Estrelinhas</div>
-              </div>
-              <div className="bg-purple-100 rounded-2xl p-3 border-2 border-purple-300">
-                <div className="font-black text-3xl text-purple-600">🏆</div>
-                <div className="text-sm font-bold text-purple-700">Prêmios</div>
-              </div>
-            </div>
-          </div>
+          <p className="text-xs text-center text-gray-500 mt-4">
+            10 histórias • Ganhe estrelas • Certificados
+          </p>
         </Card>
       </div>
     );
   }
 
+  // Dashboard dos Pais
   if (showParentDashboard) {
     const stats = getStats();
+    const formatTotalTime = (seconds: number) => {
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      return hours > 0 ? `${hours}h ${minutes}min` : `${minutes} minutos`;
+    };
+
     return (
-      <div className="min-h-screen p-6 bg-gradient-to-br from-purple-100 via-pink-100 to-yellow-100">
+      <div className="min-h-screen p-6 bg-gradient-to-br from-purple-50 to-pink-50">
         <div className="max-w-4xl mx-auto">
           <div className="flex justify-between items-center mb-8">
-            <h1 className="text-4xl font-black text-purple-600">
-              Relatório de {progress.playerName}
+            <h1 className="text-3xl font-bold">
+              Acompanhamento - {progress.playerName}
             </h1>
-            <Button onClick={() => setShowParentDashboard(false)} className="bg-purple-500 hover:bg-purple-600 rounded-xl font-bold">
-              <Home className="mr-2 h-5 w-5" />Voltar
+            <Button onClick={() => setShowParentDashboard(false)} variant="outline">
+              <Home className="mr-2 h-4 w-4" />
+              Voltar ao Jogo
             </Button>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card className="p-6 text-center bg-gradient-to-br from-blue-100 to-blue-200 border-4 border-blue-300 rounded-2xl">
-              <Clock className="h-12 w-12 mx-auto mb-3 text-blue-600" />
-              <div className="text-3xl font-black text-blue-700">{Math.floor(stats.totalTime / 60)}min</div>
-              <div className="text-sm font-bold text-blue-600">Tempo jogando</div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <Card className="p-4 text-center">
+              <Clock className="h-8 w-8 mx-auto mb-2 text-blue-500" />
+              <div className="text-2xl font-bold">{formatTotalTime(stats.totalTime)}</div>
+              <div className="text-sm text-gray-600">Tempo Total</div>
             </Card>
-            <Card className="p-6 text-center bg-gradient-to-br from-green-100 to-green-200 border-4 border-green-300 rounded-2xl">
-              <Target className="h-12 w-12 mx-auto mb-3 text-green-600" />
-              <div className="text-3xl font-black text-green-700">{stats.puzzlesCompleted}/10</div>
-              <div className="text-sm font-bold text-green-600">Completou</div>
+
+            <Card className="p-4 text-center">
+              <Target className="h-8 w-8 mx-auto mb-2 text-green-500" />
+              <div className="text-2xl font-bold">{stats.puzzlesCompleted}/10</div>
+              <div className="text-sm text-gray-600">Completos</div>
             </Card>
-            <Card className="p-6 text-center bg-gradient-to-br from-yellow-100 to-yellow-200 border-4 border-yellow-300 rounded-2xl">
-              <Star className="h-12 w-12 mx-auto mb-3 text-yellow-600" />
-              <div className="text-3xl font-black text-yellow-700">{stats.totalStars}</div>
-              <div className="text-sm font-bold text-yellow-600">Estrelinhas</div>
+
+            <Card className="p-4 text-center">
+              <Star className="h-8 w-8 mx-auto mb-2 text-yellow-500" />
+              <div className="text-2xl font-bold">{stats.totalStars}</div>
+              <div className="text-sm text-gray-600">Estrelas Total</div>
             </Card>
-            <Card className="p-6 text-center bg-gradient-to-br from-purple-100 to-purple-200 border-4 border-purple-300 rounded-2xl">
-              <Trophy className="h-12 w-12 mx-auto mb-3 text-purple-600" />
-              <div className="text-3xl font-black text-purple-700">{stats.certificates.length}</div>
-              <div className="text-sm font-bold text-purple-600">Troféus</div>
+
+            <Card className="p-4 text-center">
+              <Trophy className="h-8 w-8 mx-auto mb-2 text-purple-500" />
+              <div className="text-2xl font-bold">{stats.certificates.length}</div>
+              <div className="text-sm text-gray-600">Certificados</div>
             </Card>
           </div>
+
+          <Card className="p-6 mb-6">
+            <h2 className="text-xl font-bold mb-4">Histórias Completadas</h2>
+            <div className="space-y-3">
+              {progress.puzzlesCompleted.map((puzzle, idx) => (
+                <div key={puzzle.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <div className="font-medium">{puzzleImages[parseInt(puzzle.id.split('-')[1])]?.title || `História ${idx + 1}`}</div>
+                    <div className="text-sm text-gray-600">
+                      Tempo: {Math.floor(puzzle.timeSpent / 60)}min | Movimentos: {puzzle.moves}
+                    </div>
+                  </div>
+                  <div className="flex gap-1">
+                    {[...Array(3)].map((_, i) => (
+                      <Star key={i} className={`h-5 w-5 ${i < puzzle.stars ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Button onClick={shareProgress} className="w-full" size="lg">
+            <Share2 className="mr-2" />
+            Compartilhar Progresso no WhatsApp
+          </Button>
         </div>
       </div>
     );
   }
 
+  // Seleção de Puzzles
   if (!gameStarted) {
     return (
-      <div className="min-h-screen p-4 sm:p-6 bg-gradient-to-br from-purple-200 via-pink-200 to-yellow-200">
+      <div className="min-h-screen p-4 sm:p-6 bg-gradient-to-br from-background via-card to-secondary/20">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-4xl sm:text-5xl font-black text-purple-600 mb-4 drop-shadow-lg animate-pulse">
-              Olá, {progress.playerName}!
+            <h1 className="text-3xl font-bold text-primary mb-2">
+              Olá, {progress.playerName}! 👋
             </h1>
-            <div className="flex flex-wrap justify-center gap-3 mb-6">
-              <div className="bg-gradient-to-r from-yellow-300 to-yellow-400 px-6 py-3 rounded-full border-4 border-yellow-500 shadow-lg transform hover:scale-110 transition-all">
-                <span className="text-yellow-800 font-black flex items-center gap-2 text-lg">
-                  <Star className="h-6 w-6 fill-yellow-800" />
-                  {progress.totalStars} estrelinhas
+            <div className="flex flex-wrap justify-center gap-3 mb-4">
+              <div className="bg-yellow-100 px-4 py-2 rounded-full">
+                <span className="text-yellow-800 font-bold flex items-center gap-1">
+                  <Star className="h-4 w-4" />
+                  {progress.totalStars} estrelas
                 </span>
               </div>
-              <div className="bg-gradient-to-r from-pink-300 to-pink-400 px-6 py-3 rounded-full border-4 border-pink-500 shadow-lg transform hover:scale-110 transition-all">
-                <span className="text-pink-800 font-black text-lg">
-                  {progress.puzzlesCompleted.length}/10 aventuras
+              <div className="bg-blue-100 px-4 py-2 rounded-full">
+                <span className="text-blue-800 font-bold">
+                  🧩 {progress.puzzlesCompleted.length}/10 completos
                 </span>
               </div>
+              {progress.certificates.length > 0 && (
+                <div className="bg-purple-100 px-4 py-2 rounded-full">
+                  <span className="text-purple-800 font-bold flex items-center gap-1">
+                    <Trophy className="h-4 w-4" />
+                    {progress.certificates.length} certificados
+                  </span>
+                </div>
+              )}
             </div>
             <Button 
               onClick={() => setShowParentDashboard(true)} 
-              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-2xl font-bold text-lg px-8 py-6 shadow-lg transform hover:scale-105 transition-all"
+              variant="outline"
+              size="sm"
             >
-              <Sparkles className="mr-2" />
-              Ver meu progresso!
+              📊 Ver Relatório Completo
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {puzzleImages.map((puzzle, index) => {
               const puzzleProgress = getPuzzleProgress(`puzzle-${index}`);
               const isUnlocked = isPuzzleUnlocked(index);
@@ -425,9 +561,9 @@ const PuzzleGame = () => {
               return (
                 <Card 
                   key={puzzle.id} 
-                  className={`relative overflow-hidden transition-all duration-300 border-4 rounded-2xl shadow-xl
-                    ${isUnlocked ? 'hover:scale-105 cursor-pointer hover:shadow-2xl border-purple-400 bg-white' : 'opacity-70 border-gray-400'}
-                    ${puzzleProgress?.completed ? 'ring-4 ring-green-400 border-green-400' : ''}`}
+                  className={`relative overflow-hidden transition-all duration-300 
+                    ${isUnlocked ? 'hover:scale-105 cursor-pointer hover:shadow-xl' : 'opacity-60'}
+                    ${puzzleProgress?.completed ? 'ring-2 ring-green-500' : ''}`}
                 >
                   <div 
                     onClick={() => {
@@ -435,7 +571,7 @@ const PuzzleGame = () => {
                         setCurrentPuzzleIndex(index);
                         initializePuzzle();
                       } else {
-                        toast.error('Termine a aventura anterior primeiro!', { duration: 2000 });
+                        toast.error('Complete a história anterior primeiro! 🔒');
                       }
                     }}
                     className="p-4"
@@ -444,17 +580,17 @@ const PuzzleGame = () => {
                       <img 
                         src={puzzle.image} 
                         alt={puzzle.title}
-                        className={`w-full h-36 object-cover rounded-xl mb-3 border-4 border-purple-200
+                        className={`w-full h-32 object-cover rounded-xl mb-3 
                           ${!isUnlocked ? 'filter grayscale blur-sm' : ''}`}
                       />
                       
                       {puzzleProgress?.completed && (
-                        <div className="absolute top-2 right-2 bg-yellow-300 rounded-full px-3 py-2 border-2 border-yellow-500 shadow-lg animate-bounce">
-                          <div className="flex gap-1">
+                        <div className="absolute top-2 right-2 bg-white/90 rounded-full px-2 py-1">
+                          <div className="flex gap-0.5">
                             {[...Array(3)].map((_, i) => (
                               <Star 
                                 key={i} 
-                                className={`h-5 w-5 ${i < puzzleProgress.stars ? 'text-yellow-600 fill-yellow-600' : 'text-gray-400'}`}
+                                className={`h-4 w-4 ${i < puzzleProgress.stars ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`}
                               />
                             ))}
                           </div>
@@ -462,18 +598,34 @@ const PuzzleGame = () => {
                       )}
                       
                       {!isUnlocked && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/30 rounded-xl">
-                          <Lock className="h-16 w-16 text-white drop-shadow-2xl animate-pulse" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Lock className="h-12 w-12 text-white drop-shadow-lg" />
                         </div>
                       )}
                     </div>
                     
-                    <h3 className="text-xl font-black text-purple-600 mb-2">
+                    <h3 className="text-lg font-bold text-primary mb-1">
                       {puzzle.title}
                     </h3>
-                    <p className="text-sm font-bold text-pink-600">
+                    <p className="text-sm text-muted-foreground">
                       {puzzle.description}
                     </p>
+                    
+                    <div className="mt-2">
+                      {puzzleProgress?.completed ? (
+                        <span className="text-xs text-green-600 font-medium">
+                          ✅ Completo em {Math.floor(puzzleProgress.timeSpent / 60)}min
+                        </span>
+                      ) : isUnlocked ? (
+                        <span className="text-xs text-blue-600 font-medium">
+                          🔓 Disponível para jogar
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-500 font-medium">
+                          🔒 Complete a anterior
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </Card>
               );
@@ -484,40 +636,40 @@ const PuzzleGame = () => {
     );
   }
 
+  // Tela do Jogo
   return (
-    <div className="min-h-screen p-4 sm:p-6 bg-gradient-to-br from-purple-200 via-pink-200 to-yellow-200">
-      {showConfetti && <Confetti width={windowSize.width} height={windowSize.height} recycle={false} numberOfPieces={500} />}
-      
+    <div className="min-h-screen p-4 sm:p-6 bg-gradient-to-br from-background via-card to-secondary/20">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-6">
-          <h1 className="text-2xl sm:text-3xl font-black text-purple-600 mb-3 drop-shadow-lg">
+        {/* Header do jogo */}
+        <div className="text-center mb-4">
+          <h1 className="text-xl sm:text-2xl font-bold text-primary mb-2">
             {currentPuzzle.title}
           </h1>
-          <div className="flex justify-center gap-4 text-sm sm:text-base flex-wrap">
-            <div className="flex items-center gap-2 bg-blue-300 px-4 py-2 rounded-full border-3 border-blue-500 font-bold shadow-lg">
-              <Clock className="h-5 w-5" />
-              <span className="font-mono text-lg">{formatTime(elapsedTime)}</span>
+          <div className="flex justify-center gap-3 text-xs sm:text-sm">
+            <div className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              <span className="font-mono">{formatTime(elapsedTime)}</span>
             </div>
-            <div className="flex items-center gap-2 bg-green-300 px-4 py-2 rounded-full border-3 border-green-500 font-bold shadow-lg">
-              <Target className="h-5 w-5" />
-              <span className="text-lg">{moves} jogadas</span>
+            <div className="flex items-center gap-1">
+              <Target className="h-3 w-3" />
+              <span>{moves} movimentos</span>
             </div>
-            <div className="flex items-center gap-2 bg-yellow-300 px-4 py-2 rounded-full border-3 border-yellow-500 font-bold shadow-lg">
-              <Star className="h-5 w-5" />
-              <span className="text-lg">{currentPuzzleIndex + 1}/{puzzleImages.length}</span>
+            <div className="flex items-center gap-1">
+              <Star className="h-3 w-3" />
+              <span>Puzzle {currentPuzzleIndex + 1}/{puzzleImages.length}</span>
             </div>
           </div>
         </div>
 
-        <div className="space-y-4">
-          <Card className="p-4 mx-auto max-w-fit bg-gradient-to-br from-yellow-100 to-orange-100 border-4 border-yellow-400 rounded-3xl shadow-2xl">
-            <h2 className="text-xl font-black text-center mb-3 text-orange-600 flex items-center justify-center gap-2">
-              <Sparkles className="animate-spin" />
-              Monte aqui a imagem!
-              <Sparkles className="animate-spin" />
+        {/* Área do jogo - TODAS AS PEÇAS VISÍVEIS */}
+        <div className="space-y-2">
+          {/* Tabuleiro */}
+          <Card className="p-2 mx-auto max-w-fit">
+            <h2 className="text-sm font-semibold text-center mb-2 text-primary">
+              Monte aqui! 🧩
             </h2>
-            <div className="bg-white/50 p-3 rounded-2xl border-4 border-yellow-300">
-              <div className="grid grid-cols-3 gap-2">
+            <div className="bg-yellow-50 p-2 rounded-lg">
+              <div className="grid grid-cols-3 gap-1">
                 {Array.from({ length: GRID_SIZE }, (_, row) =>
                   Array.from({ length: GRID_SIZE }, (_, col) =>
                     renderPuzzleSlot(row, col)
@@ -527,120 +679,137 @@ const PuzzleGame = () => {
             </div>
           </Card>
 
-          <Card className="p-4 mx-auto max-w-fit bg-gradient-to-br from-purple-100 to-pink-100 border-4 border-purple-400 rounded-3xl shadow-2xl">
-            <h3 className="text-lg font-black text-center mb-3 text-purple-600">
-              Suas peças mágicas ({pieces.filter(p => !p.isPlaced).length})
+          {/* Peças - SEMPRE GRID 3x3 */}
+          <Card className="p-2 mx-auto max-w-fit">
+            <h3 className="text-xs font-semibold text-center mb-2 text-primary">
+              Peças disponíveis ({pieces.filter(p => !p.isPlaced).length})
             </h3>
-            <div className="bg-white/50 rounded-2xl p-3 border-4 border-purple-300">
-              <div className="grid grid-cols-3 gap-2">
+            <div className="bg-gray-50 rounded-lg p-2">
+              <div className="grid grid-cols-3 gap-1">
                 {pieces.filter(p => !p.isPlaced).map(piece => (
                   <div key={piece.id} className="flex justify-center items-center">
                     {renderPuzzlePiece(piece)}
                   </div>
                 ))}
+                
+                {/* Espaços vazios quando peças são usadas */}
                 {[...Array(9 - pieces.filter(p => !p.isPlaced).length)].map((_, i) => (
                   <div 
                     key={`empty-${i}`} 
-                    className="border-4 border-dashed border-purple-200 rounded-xl"
+                    className="border-2 border-dashed border-gray-200 rounded-lg"
                     style={{ width: `${pieceSize}px`, height: `${pieceSize}px` }}
                   />
                 ))}
               </div>
+              
+              {pieces.filter(p => !p.isPlaced).length === 0 && (
+                <div className="text-center py-2 text-gray-500">
+                  <p className="text-xs">✅ Todas as peças foram colocadas!</p>
+                </div>
+              )}
             </div>
           </Card>
         </div>
 
-        <div className="text-center mt-6 space-y-4">
-          <div className="flex justify-center gap-3">
+        {/* Controles */}
+        <div className="text-center mt-4 space-y-3">
+          <div className="flex justify-center gap-2">
             <Button 
               onClick={goToPuzzleSelection} 
-              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-2xl font-bold px-6 py-6 text-lg shadow-lg transform hover:scale-110 transition-all"
+              variant="outline"
+              size="sm"
             >
-              <Home className="mr-2 h-5 w-5" />
-              Voltar
+              <Home className="mr-1 h-4 w-4" />
+              Menu
             </Button>
             <Button 
-              onClick={() => { setShowCongratulations(false); setShowNextPuzzleDialog(false); initializePuzzle(); }} 
-              className="bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 rounded-2xl font-bold px-6 py-6 text-lg shadow-lg transform hover:scale-110 transition-all"
+              onClick={resetGame} 
+              variant="outline"
+              size="sm"
             >
-              <RotateCcw className="mr-2 h-5 w-5" />
-              Tentar de novo
+              <RotateCcw className="mr-1 h-4 w-4" />
+              Reiniciar
             </Button>
           </div>
           
           {isComplete && (
-            <div className="p-6 rounded-3xl bg-gradient-to-r from-green-400 via-yellow-400 to-pink-400 text-white shadow-2xl animate-bounce border-4 border-white">
-              <p className="text-3xl font-black drop-shadow-lg">
-                VOCÊ CONSEGUIU! PARABÉNS!
+            <div className="mt-3 p-3 rounded-2xl bg-gradient-to-r from-green-500 to-green-600 text-white animate-pulse">
+              <p className="text-lg font-bold">
+                🎉 Parabéns! Puzzle Completo! 🎉
               </p>
             </div>
           )}
         </div>
 
+        {/* Dialog de Parabéns */}
         <Dialog open={showCongratulations} onOpenChange={setShowCongratulations}>
-          <DialogContent className="max-w-[90vw] sm:max-w-lg bg-gradient-to-br from-purple-100 to-pink-100 border-4 border-purple-400 rounded-3xl">
-            <DialogHeader>
-              <DialogTitle className="text-3xl font-black text-center text-purple-600">
-                VOCÊ É DEMAIS, {progress.playerName}!
+          <DialogContent className="max-w-[90vw] sm:max-w-lg mx-auto my-4">
+            <DialogHeader className="pb-2">
+              <DialogTitle className="text-lg sm:text-2xl text-center">
+                🎉 Parabéns, {progress.playerName}!
               </DialogTitle>
             </DialogHeader>
             
-            <div className="space-y-4">
-              <p className="text-center text-xl font-bold text-pink-600">
-                Completou {currentPuzzle.title}!
+            <div className="space-y-3 max-h-[65vh] overflow-y-auto px-1">
+              <p className="text-center text-sm text-gray-600">
+                Você completou {currentPuzzle.title}!
               </p>
 
-              <div className="flex justify-center gap-2">
+              <div className="flex justify-center gap-1">
                 {[...Array(3)].map((_, i) => (
                   <Star 
                     key={i} 
-                    className={`h-16 w-16 ${
+                    className={`h-8 w-8 ${
                       i < earnedStars 
-                        ? 'text-yellow-400 fill-yellow-400 animate-bounce' 
+                        ? 'text-yellow-500 fill-yellow-500' 
                         : 'text-gray-300'
                     }`}
                   />
                 ))}
               </div>
 
-              <div className="p-4 bg-blue-100 rounded-2xl border-4 border-blue-300">
-                <p className="text-sm italic text-center font-bold text-blue-700">
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <p className="text-xs font-medium text-blue-600 mb-1">
+                  ✨ Versículo para Meditar:
+                </p>
+                <p className="text-xs italic text-center">
                   "{currentPuzzle.verse}"
                 </p>
-                <p className="text-xs text-center mt-2 text-blue-600 font-bold">
+                <p className="text-xs text-center mt-1 text-gray-500">
                   - {currentPuzzle.reference}
                 </p>
               </div>
             </div>
 
-            <div className="grid gap-3 pt-4">
+            <div className="grid gap-2 pt-3 border-t">
               {currentPuzzleIndex < puzzleImages.length - 1 && (
                 <Button 
-                  onClick={() => {
-                    setCurrentPuzzleIndex(prev => prev + 1);
-                    setShowCongratulations(false);
-                    initializePuzzle();
-                  }}
-                  className="w-full bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 rounded-2xl font-black text-xl py-6 shadow-lg transform hover:scale-105 transition-all"
+                  onClick={goToNextPuzzle}
+                  className="w-full bg-green-500 hover:bg-green-600"
                 >
-                  Próxima aventura! <ChevronRight className="ml-2 h-6 w-6" />
+                  Próxima História <ChevronRight className="ml-1 h-4 w-4" />
                 </Button>
               )}
               
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2">
                 <Button 
-                  onClick={() => { setShowCongratulations(false); initializePuzzle(); }}
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-2xl font-bold py-4 shadow-lg"
+                  onClick={resetGame}
+                  variant="outline"
+                  size="sm"
                 >
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  Jogar de novo
+                  <RotateCcw className="mr-1 h-3 w-3" />
+                  Repetir
                 </Button>
                 
                 <Button 
-                  onClick={() => { setShowCongratulations(false); goToPuzzleSelection(); }}
-                  className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-2xl font-bold py-4 shadow-lg"
+                  onClick={() => {
+                    setShowCongratulations(false);
+                    goToPuzzleSelection();
+                  }}
+                  variant="outline"
+                  size="sm"
                 >
-                  <Home className="mr-2 h-4 w-4" />
+                  <Home className="mr-1 h-3 w-3" />
                   Menu
                 </Button>
               </div>
@@ -648,9 +817,35 @@ const PuzzleGame = () => {
           </DialogContent>
         </Dialog>
 
+        {/* Dialog Final */}
+        <Dialog open={showNextPuzzleDialog} onOpenChange={setShowNextPuzzleDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="text-3xl font-bold text-center text-primary">
+                🌟 Incrível! Você Completou Tudo! 🌟
+              </DialogTitle>
+              <DialogDescription className="text-center space-y-4">
+                <div className="text-xl font-semibold">
+                  Parabéns por completar todas as 10 histórias bíblicas!
+                </div>
+                <div className="bg-gradient-to-r from-yellow-100 to-yellow-200 p-6 rounded-lg">
+                  <Trophy className="h-16 w-16 mx-auto mb-3 text-yellow-600" />
+                  <p className="text-lg font-bold">Você é um verdadeiro campeão!</p>
+                  <p className="text-sm mt-2">Total de {progress.totalStars} estrelas conquistadas!</p>
+                </div>
+                <Button onClick={goToPuzzleSelection} className="w-full">
+                  <Home className="mr-2 h-4 w-4" />
+                  Voltar ao Início
+                </Button>
+              </DialogDescription>
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
+
+        {/* Preview de Drag para Mobile */}
         {dragPreview && isMobile && (
           <div
-            className="fixed pointer-events-none z-50 opacity-80 rounded-xl shadow-2xl"
+            className="fixed pointer-events-none z-50 opacity-80 rounded-lg"
             style={{
               left: dragPreview.x - pieceSize / 2,
               top: dragPreview.y - pieceSize / 2,
@@ -659,7 +854,8 @@ const PuzzleGame = () => {
               backgroundImage: `url(${currentPuzzle.image})`,
               backgroundSize: `${pieceSize * GRID_SIZE}px ${pieceSize * GRID_SIZE}px`,
               backgroundPosition: `-${dragPreview.piece.correctPosition.col * pieceSize}px -${dragPreview.piece.correctPosition.row * pieceSize}px`,
-              border: '4px solid #a855f7',
+              border: '2px solid hsl(var(--primary))',
+              boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
             }}
           />
         )}
