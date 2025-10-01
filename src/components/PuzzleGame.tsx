@@ -456,52 +456,77 @@ const PuzzleGame = () => {
     );
   }
 
-  // Tela de Boas-Vindas (mantida igual)
+  // Tela de Boas-Vindas SIMPLIFICADA
   if (showWelcome) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100 
                       flex items-center justify-center p-4">
-        <Card className="max-w-md w-full p-6">
-          <div className="text-center mb-6">
-            <div className="text-6xl mb-3 animate-bounce">🧩</div>
-            <h1 className="text-2xl font-bold text-gray-800">
+        <Card className="max-w-md w-full p-8">
+          <div className="text-center mb-8">
+            <div className="text-7xl mb-4 animate-bounce">🧩</div>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">
               Quebra-Cabeças Bíblicos
             </h1>
+            <p className="text-gray-600">
+              10 histórias para aprender e se divertir
+            </p>
           </div>
 
-          <Input
-            type="text"
-            placeholder="Seu nome..."
-            className="text-xl p-4 text-center font-bold mb-4"
-            maxLength={20}
-            autoFocus
-            id="nameInput"
-            onKeyPress={(e) => {
-              if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                setPlayerName(e.currentTarget.value.trim());
-                setShowWelcome(false);
-              }
-            }}
-          />
-          
-          <Button
-            onClick={() => {
-              const input = document.getElementById('nameInput') as HTMLInputElement;
-              if (input?.value.trim()) {
-                setPlayerName(input.value.trim());
-                setShowWelcome(false);
-              } else {
-                toast.error('Digite seu nome primeiro!');
-              }
-            }}
-            className="w-full text-lg py-6 bg-green-500 hover:bg-green-600"
-          >
-            COMEÇAR!
-          </Button>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2 text-center">
+                Qual é o seu nome?
+              </label>
+              <Input
+                type="text"
+                placeholder="Digite seu nome aqui..."
+                className="text-2xl p-6 text-center font-bold"
+                maxLength={20}
+                autoFocus
+                id="nameInput"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                    setPlayerName(e.currentTarget.value.trim());
+                    setShowWelcome(false);
+                    toast.success(`Bem-vindo(a), ${e.currentTarget.value.trim()}!`);
+                  }
+                }}
+              />
+            </div>
+            
+            <Button
+              onClick={() => {
+                const input = document.getElementById('nameInput') as HTMLInputElement;
+                if (input?.value.trim()) {
+                  setPlayerName(input.value.trim());
+                  setShowWelcome(false);
+                  toast.success(`Bem-vindo(a), ${input.value.trim()}!`);
+                } else {
+                  toast.error('Por favor, digite seu nome para começar');
+                }
+              }}
+              className="w-full text-xl py-7 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 font-bold"
+            >
+              COMEÇAR A JOGAR
+            </Button>
+          </div>
 
-          <p className="text-xs text-center text-gray-500 mt-4">
-            10 histórias • 3 níveis • Ganhe estrelas
-          </p>
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <div className="grid grid-cols-3 gap-3 text-center text-xs text-gray-600">
+              <div>
+                <div className="font-bold text-lg">10</div>
+                <div>Histórias</div>
+              </div>
+              <div>
+                <div className="font-bold text-lg">3</div>
+                <div>Níveis</div>
+              </div>
+              <div>
+                <div className="font-bold text-lg">⭐</div>
+                <div>Estrelas</div>
+              </div>
+            </div>
+          </div>
         </Card>
       </div>
     );
