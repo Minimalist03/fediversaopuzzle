@@ -346,10 +346,17 @@ const PuzzleGame = () => {
   };
 
   const renderPuzzlePiece = (piece: PuzzlePiece) => {
+    // Calcula o tamanho total da imagem de fundo (grid completo)
+    const totalSize = pieceSize * currentGridSize;
+    
+    // Calcula a posição de corte baseada na posição correta da peça
+    const bgPosX = -(piece.correctPosition.col * pieceSize);
+    const bgPosY = -(piece.correctPosition.row * pieceSize);
+    
     const style = {
       backgroundImage: `url(${currentPuzzle.image})`,
-      backgroundSize: `${pieceSize * currentGridSize}px ${pieceSize * currentGridSize}px`,
-      backgroundPosition: `-${piece.correctPosition.col * pieceSize}px -${piece.correctPosition.row * pieceSize}px`,
+      backgroundSize: `${totalSize}px ${totalSize}px`,
+      backgroundPosition: `${bgPosX}px ${bgPosY}px`,
       width: `${pieceSize}px`,
       height: `${pieceSize}px`,
     };
@@ -926,7 +933,7 @@ const PuzzleGame = () => {
               height: pieceSize,
               backgroundImage: `url(${currentPuzzle.image})`,
               backgroundSize: `${pieceSize * currentGridSize}px ${pieceSize * currentGridSize}px`,
-              backgroundPosition: `-${dragPreview.piece.correctPosition.col * pieceSize}px -${dragPreview.piece.correctPosition.row * pieceSize}px`,
+              backgroundPosition: `${-(dragPreview.piece.correctPosition.col * pieceSize)}px ${-(dragPreview.piece.correctPosition.row * pieceSize)}px`,
               border: '2px solid hsl(var(--primary))',
               boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
             }}
