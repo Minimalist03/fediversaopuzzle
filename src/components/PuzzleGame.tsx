@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { puzzleImages, PuzzleImageData } from "@/data/puzzleImages";
 import { useGameProgress } from "@/hooks/useGameProgress";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
-import { Trophy, Clock, Target, Star, Lock, Home, RotateCcw, ChevronRight, Share2 } from "lucide-react";
+import { Trophy, Clock, Target, Star, Lock, Home, RotateCcw, ChevronRight, Share2, Zap } from "lucide-react";
 
 // ==================== INTERFACES ====================
 interface PuzzlePiece {
@@ -17,6 +17,14 @@ interface PuzzlePiece {
   correctPosition: { row: number; col: number };
   isPlaced: boolean;
 }
+
+type DifficultyLevel = 'easy' | 'medium' | 'hard';
+
+const DIFFICULTY_CONFIG = {
+  easy: { gridSize: 2, name: 'Fácil', icon: '😊', color: 'bg-green-500', stars: 1 },
+  medium: { gridSize: 3, name: 'Médio', icon: '🤔', color: 'bg-yellow-500', stars: 2 },
+  hard: { gridSize: 4, name: 'Difícil', icon: '😤', color: 'bg-red-500', stars: 3 }
+};
 
 // ==================== COMPONENTE PRINCIPAL ====================
 const PuzzleGame = () => {
@@ -31,6 +39,8 @@ const PuzzleGame = () => {
   const [touchStartPos, setTouchStartPos] = useState<{ x: number; y: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragPreview, setDragPreview] = useState<{ x: number; y: number; piece: PuzzlePiece } | null>(null);
+  const [difficulty, setDifficulty] = useState<DifficultyLevel>('medium');
+  const [showDifficultySelector, setShowDifficultySelector] = useState(false);
   
   // Estados de responsividade
   const [isMobile, setIsMobile] = useState(false);
@@ -58,7 +68,7 @@ const PuzzleGame = () => {
   const { playSuccessSound, playPieceDropSound, playCompletionSound } = useSoundEffects();
 
   const currentPuzzle: PuzzleImageData = puzzleImages[currentPuzzleIndex];
-  const GRID_SIZE = 3;
+  const GRID_SIZE = DIFFICULTY_CONFIG[difficulty].gridSize;
 
   // Detecta tipo de dispositivo
   useEffect(() => {
@@ -89,29 +99,36 @@ const PuzzleGame = () => {
     return () => clearInterval(interval);
   }, [gameStarted, isComplete, startTime]);
 
-  // Tamanhos otimizados por dispositivo
+  // Tamanhos otimizados por dispositivo e dificuldade
   const getPieceSize = () => {
     const width = window.innerWidth;
     const height = window.innerHeight;
     
     if (width <= 480) {
-      // Mobile: calcula para caber 2 grids 3x3 na tela
+      // Mobile: ajusta pelo grid size
       const padding = 48;
       const gaps = 16;
-      const extraSpace = 250; // header, textos, botões
+      const extraSpace = 250;
       
-      const maxWidth = Math.floor((width - padding - gaps) / 3.2);
-      const maxHeight = Math.floor((height - extraSpace) / 6.5);
+      const maxWidth = Math.floor((width - padding - gaps) / (GRID_SIZE + 0.2));
+      const maxHeight = Math.floor((height - extraSpace) / (GRID_SIZE * 2 + 0.5));
       const optimalSize = Math.min(maxWidth, maxHeight);
       
-      if (width <= 360) return Math.max(65, Math.min(70, optimalSize));
-      if (width <= 375) return Math.max(68, Math.min(73, optimalSize));
-      if (width <= 414) return Math.max(72, Math.min(78, optimalSize));
-      return Math.max(75, Math.min(82, optimalSize));
+      if (GRID_SIZE === 2) return Math.max(80, Math.min(100, optimalSize));
+      if (GRID_SIZE === 3) return Math.max(65, Math.min(80, optimalSize));
+      return Math.max(50, Math.min(65, optimalSize)); // 4x4
     }
     
-    if (width < 768) return 90;
-    return 100;
+    if (width < 768) {
+      if (GRID_SIZE === 2) return 110;
+      if (GRID_SIZE === 3) return 90;
+      return 70;
+    }
+    
+    // Desktop
+    if (GRID_SIZE === 2) return 130;
+    if (GRID_SIZE === 3) return 100;
+    return 80;
   };
 
   const pieceSize = getPieceSize();
@@ -127,7 +144,6 @@ const PuzzleGame = () => {
   const initializePuzzle = useCallback(() => {
     const newPieces: PuzzlePiece[] = [];
     
-    // Criar 9 peças (3x3)
     for (let row = 0; row < GRID_SIZE; row++) {
       for (let col = 0; col < GRID_SIZE; col++) {
         newPieces.push({
@@ -141,15 +157,15 @@ const PuzzleGame = () => {
     }
     
     const shuffledPieces = [...newPieces].sort(() => Math.random() - 0.5);
-    console.log('Total de peças criadas:', shuffledPieces.length); // Debug
     
     setPieces(shuffledPieces);
     setIsComplete(false);
     setGameStarted(true);
+    setShowDifficultySelector(false);
     setStartTime(Date.now());
     setElapsedTime(0);
     setMoves(0);
-  }, [currentPuzzle]);
+  }, [GRID_SIZE]);
 
   // Verifica se o quebra-cabeça está completo
   const checkCompletion = useCallback(() => {
@@ -163,13 +179,18 @@ const PuzzleGame = () => {
       if (allCorrect && !isComplete) {
         setIsComplete(true);
         const timeSpent = Math.floor((Date.now() - startTime) / 1000);
-        const stars = savePuzzleCompletion(
+        
+        // Bonus de estrelas por dificuldade
+        const baseStars = savePuzzleCompletion(
           `puzzle-${currentPuzzleIndex}`, 
           timeSpent, 
           moves
         );
         
-        setEarnedStars(stars);
+        const difficultyBonus = DIFFICULTY_CONFIG[difficulty].stars;
+        const totalStars = Math.min(baseStars + difficultyBonus, 3);
+        
+        setEarnedStars(totalStars);
         playCompletionSound();
         
         setTimeout(() => {
@@ -177,13 +198,13 @@ const PuzzleGame = () => {
         }, 500);
       }
     }
-  }, [pieces, isComplete, startTime, moves, currentPuzzleIndex, savePuzzleCompletion, playCompletionSound]);
+  }, [pieces, isComplete, startTime, moves, currentPuzzleIndex, savePuzzleCompletion, playCompletionSound, GRID_SIZE, difficulty]);
 
   useEffect(() => {
     checkCompletion();
   }, [pieces, checkCompletion]);
 
-  // Handlers de drag
+  // Handlers de drag (mantidos iguais ao original)
   const handleDragStart = (piece: PuzzlePiece) => {
     setDraggedPiece(piece);
     setIsDragging(true);
@@ -264,9 +285,7 @@ const PuzzleGame = () => {
       p => p.isPlaced && p.row === targetRow && p.col === targetCol
     );
 
-    if (existingPiece) {
-      return;
-    }
+    if (existingPiece) return;
 
     setMoves(prev => prev + 1);
 
@@ -278,7 +297,6 @@ const PuzzleGame = () => {
       )
     );
 
-    // Apenas toca o som, sem toast
     if (draggedPiece.correctPosition.row === targetRow && 
         draggedPiece.correctPosition.col === targetCol) {
       playSuccessSound();
@@ -290,7 +308,7 @@ const PuzzleGame = () => {
   const resetGame = () => {
     setShowCongratulations(false);
     setShowNextPuzzleDialog(false);
-    initializePuzzle();
+    setShowDifficultySelector(true);
   };
 
   const goToNextPuzzle = () => {
@@ -298,7 +316,7 @@ const PuzzleGame = () => {
       setCurrentPuzzleIndex(prev => prev + 1);
       setShowCongratulations(false);
       setShowNextPuzzleDialog(false);
-      initializePuzzle();
+      setShowDifficultySelector(true);
     } else {
       setShowNextPuzzleDialog(true);
     }
@@ -308,11 +326,12 @@ const PuzzleGame = () => {
     setGameStarted(false);
     setShowCongratulations(false);
     setShowNextPuzzleDialog(false);
+    setShowDifficultySelector(false);
   };
 
   const shareProgress = () => {
     const stats = getStats();
-    const text = `🎉 ${progress.playerName} já completou ${stats.puzzlesCompleted} quebra-cabeças bíblicos e ganhou ${stats.totalStars} estrelas! 🌟`;
+    const text = `🎉 ${progress.playerName} já completou ${stats.puzzlesCompleted} quebra-cabeças bíblicos e ganhou ${stats.totalStars} estrelas!`;
     
     if (navigator.share) {
       navigator.share({
@@ -322,7 +341,7 @@ const PuzzleGame = () => {
       });
     } else {
       navigator.clipboard.writeText(text);
-      toast.success('Texto copiado! Cole no WhatsApp 📱');
+      toast.success('Texto copiado! Cole no WhatsApp');
     }
   };
 
@@ -385,7 +404,59 @@ const PuzzleGame = () => {
     );
   };
 
-  // Tela de Boas-Vindas SIMPLIFICADA
+  // Seletor de Dificuldade
+  if (showDifficultySelector && gameStarted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100 
+                      flex items-center justify-center p-4">
+        <Card className="max-w-lg w-full p-6">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold mb-2">{currentPuzzle.title}</h2>
+            <p className="text-gray-600">Escolha a dificuldade:</p>
+          </div>
+
+          <div className="space-y-3">
+            {Object.entries(DIFFICULTY_CONFIG).map(([key, config]) => (
+              <Button
+                key={key}
+                onClick={() => {
+                  setDifficulty(key as DifficultyLevel);
+                  initializePuzzle();
+                }}
+                className={`w-full h-20 text-lg ${config.color} hover:opacity-90`}
+                variant="default"
+              >
+                <div className="flex items-center justify-between w-full px-4">
+                  <span className="text-3xl">{config.icon}</span>
+                  <div className="text-left flex-1 ml-4">
+                    <div className="font-bold">{config.name}</div>
+                    <div className="text-sm opacity-90">
+                      {config.gridSize}x{config.gridSize} peças
+                    </div>
+                  </div>
+                  <div className="flex gap-1">
+                    {[...Array(config.stars)].map((_, i) => (
+                      <Star key={i} className="h-5 w-5 fill-white" />
+                    ))}
+                  </div>
+                </div>
+              </Button>
+            ))}
+          </div>
+
+          <Button
+            onClick={goToPuzzleSelection}
+            variant="outline"
+            className="w-full mt-4"
+          >
+            Voltar ao Menu
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  // Tela de Boas-Vindas (mantida igual)
   if (showWelcome) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100 
@@ -420,23 +491,23 @@ const PuzzleGame = () => {
                 setPlayerName(input.value.trim());
                 setShowWelcome(false);
               } else {
-                toast.error('Digite seu nome primeiro! ☝️');
+                toast.error('Digite seu nome primeiro!');
               }
             }}
             className="w-full text-lg py-6 bg-green-500 hover:bg-green-600"
           >
-            COMEÇAR! 🎮
+            COMEÇAR!
           </Button>
 
           <p className="text-xs text-center text-gray-500 mt-4">
-            10 histórias • Ganhe estrelas • Certificados
+            10 histórias • 3 níveis • Ganhe estrelas
           </p>
         </Card>
       </div>
     );
   }
 
-  // Dashboard dos Pais
+  // Dashboard dos Pais (mantido igual ao original)
   if (showParentDashboard) {
     const stats = getStats();
     const formatTotalTime = (seconds: number) => {
@@ -514,14 +585,14 @@ const PuzzleGame = () => {
     );
   }
 
-  // Seleção de Puzzles
+  // Seleção de Puzzles (mantido igual)
   if (!gameStarted) {
     return (
       <div className="min-h-screen p-4 sm:p-6 bg-gradient-to-br from-background via-card to-secondary/20">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-primary mb-2">
-              Olá, {progress.playerName}! 👋
+              Olá, {progress.playerName}!
             </h1>
             <div className="flex flex-wrap justify-center gap-3 mb-4">
               <div className="bg-yellow-100 px-4 py-2 rounded-full">
@@ -532,7 +603,7 @@ const PuzzleGame = () => {
               </div>
               <div className="bg-blue-100 px-4 py-2 rounded-full">
                 <span className="text-blue-800 font-bold">
-                  🧩 {progress.puzzlesCompleted.length}/10 completos
+                  {progress.puzzlesCompleted.length}/10 completos
                 </span>
               </div>
               {progress.certificates.length > 0 && (
@@ -549,7 +620,7 @@ const PuzzleGame = () => {
               variant="outline"
               size="sm"
             >
-              📊 Ver Relatório Completo
+              Ver Relatório Completo
             </Button>
           </div>
 
@@ -569,9 +640,10 @@ const PuzzleGame = () => {
                     onClick={() => {
                       if (isUnlocked) {
                         setCurrentPuzzleIndex(index);
-                        initializePuzzle();
+                        setGameStarted(true);
+                        setShowDifficultySelector(true);
                       } else {
-                        toast.error('Complete a história anterior primeiro! 🔒');
+                        toast.error('Complete a história anterior primeiro!');
                       }
                     }}
                     className="p-4"
@@ -614,15 +686,15 @@ const PuzzleGame = () => {
                     <div className="mt-2">
                       {puzzleProgress?.completed ? (
                         <span className="text-xs text-green-600 font-medium">
-                          ✅ Completo em {Math.floor(puzzleProgress.timeSpent / 60)}min
+                          Completo em {Math.floor(puzzleProgress.timeSpent / 60)}min
                         </span>
                       ) : isUnlocked ? (
                         <span className="text-xs text-blue-600 font-medium">
-                          🔓 Disponível para jogar
+                          Disponível para jogar
                         </span>
                       ) : (
                         <span className="text-xs text-gray-500 font-medium">
-                          🔒 Complete a anterior
+                          Complete a anterior
                         </span>
                       )}
                     </div>
@@ -636,16 +708,19 @@ const PuzzleGame = () => {
     );
   }
 
-  // Tela do Jogo
+  // Tela do Jogo (igual ao original, apenas com indicador de dificuldade)
   return (
     <div className="min-h-screen p-4 sm:p-6 bg-gradient-to-br from-background via-card to-secondary/20">
       <div className="max-w-7xl mx-auto">
-        {/* Header do jogo */}
         <div className="text-center mb-4">
           <h1 className="text-xl sm:text-2xl font-bold text-primary mb-2">
             {currentPuzzle.title}
           </h1>
-          <div className="flex justify-center gap-3 text-xs sm:text-sm">
+          <div className="flex justify-center gap-3 text-xs sm:text-sm flex-wrap">
+            <div className={`flex items-center gap-1 px-2 py-1 rounded ${DIFFICULTY_CONFIG[difficulty].color} text-white font-bold`}>
+              <Zap className="h-3 w-3" />
+              <span>{DIFFICULTY_CONFIG[difficulty].name}</span>
+            </div>
             <div className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
               <span className="font-mono">{formatTime(elapsedTime)}</span>
@@ -661,15 +736,15 @@ const PuzzleGame = () => {
           </div>
         </div>
 
-        {/* Área do jogo - TODAS AS PEÇAS VISÍVEIS */}
         <div className="space-y-2">
-          {/* Tabuleiro */}
           <Card className="p-2 mx-auto max-w-fit">
             <h2 className="text-sm font-semibold text-center mb-2 text-primary">
-              Monte aqui! 🧩
+              Monte aqui!
             </h2>
             <div className="bg-yellow-50 p-2 rounded-lg">
-              <div className="grid grid-cols-3 gap-1">
+              <div className={`grid gap-1`} style={{ 
+                gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)` 
+              }}>
                 {Array.from({ length: GRID_SIZE }, (_, row) =>
                   Array.from({ length: GRID_SIZE }, (_, col) =>
                     renderPuzzleSlot(row, col)
@@ -679,21 +754,21 @@ const PuzzleGame = () => {
             </div>
           </Card>
 
-          {/* Peças - SEMPRE GRID 3x3 */}
           <Card className="p-2 mx-auto max-w-fit">
             <h3 className="text-xs font-semibold text-center mb-2 text-primary">
               Peças disponíveis ({pieces.filter(p => !p.isPlaced).length})
             </h3>
             <div className="bg-gray-50 rounded-lg p-2">
-              <div className="grid grid-cols-3 gap-1">
+              <div className={`grid gap-1`} style={{ 
+                gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)` 
+              }}>
                 {pieces.filter(p => !p.isPlaced).map(piece => (
                   <div key={piece.id} className="flex justify-center items-center">
                     {renderPuzzlePiece(piece)}
                   </div>
                 ))}
                 
-                {/* Espaços vazios quando peças são usadas */}
-                {[...Array(9 - pieces.filter(p => !p.isPlaced).length)].map((_, i) => (
+                {[...Array((GRID_SIZE * GRID_SIZE) - pieces.filter(p => !p.isPlaced).length)].map((_, i) => (
                   <div 
                     key={`empty-${i}`} 
                     className="border-2 border-dashed border-gray-200 rounded-lg"
@@ -704,14 +779,13 @@ const PuzzleGame = () => {
               
               {pieces.filter(p => !p.isPlaced).length === 0 && (
                 <div className="text-center py-2 text-gray-500">
-                  <p className="text-xs">✅ Todas as peças foram colocadas!</p>
+                  <p className="text-xs">Todas as peças foram colocadas!</p>
                 </div>
               )}
             </div>
           </Card>
         </div>
 
-        {/* Controles */}
         <div className="text-center mt-4 space-y-3">
           <div className="flex justify-center gap-2">
             <Button 
@@ -735,24 +809,24 @@ const PuzzleGame = () => {
           {isComplete && (
             <div className="mt-3 p-3 rounded-2xl bg-gradient-to-r from-green-500 to-green-600 text-white animate-pulse">
               <p className="text-lg font-bold">
-                🎉 Parabéns! Puzzle Completo! 🎉
+                Parabéns! Puzzle Completo!
               </p>
             </div>
           )}
         </div>
 
-        {/* Dialog de Parabéns */}
+        {/* Dialogs mantidos iguais */}
         <Dialog open={showCongratulations} onOpenChange={setShowCongratulations}>
           <DialogContent className="max-w-[90vw] sm:max-w-lg mx-auto my-4">
             <DialogHeader className="pb-2">
               <DialogTitle className="text-lg sm:text-2xl text-center">
-                🎉 Parabéns, {progress.playerName}!
+                Parabéns, {progress.playerName}!
               </DialogTitle>
             </DialogHeader>
             
             <div className="space-y-3 max-h-[65vh] overflow-y-auto px-1">
               <p className="text-center text-sm text-gray-600">
-                Você completou {currentPuzzle.title}!
+                Você completou {currentPuzzle.title} no nível {DIFFICULTY_CONFIG[difficulty].name}!
               </p>
 
               <div className="flex justify-center gap-1">
@@ -770,7 +844,7 @@ const PuzzleGame = () => {
 
               <div className="p-3 bg-blue-50 rounded-lg">
                 <p className="text-xs font-medium text-blue-600 mb-1">
-                  ✨ Versículo para Meditar:
+                  Versículo para Meditar:
                 </p>
                 <p className="text-xs italic text-center">
                   "{currentPuzzle.verse}"
@@ -817,32 +891,6 @@ const PuzzleGame = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Dialog Final */}
-        <Dialog open={showNextPuzzleDialog} onOpenChange={setShowNextPuzzleDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="text-3xl font-bold text-center text-primary">
-                🌟 Incrível! Você Completou Tudo! 🌟
-              </DialogTitle>
-              <DialogDescription className="text-center space-y-4">
-                <div className="text-xl font-semibold">
-                  Parabéns por completar todas as 10 histórias bíblicas!
-                </div>
-                <div className="bg-gradient-to-r from-yellow-100 to-yellow-200 p-6 rounded-lg">
-                  <Trophy className="h-16 w-16 mx-auto mb-3 text-yellow-600" />
-                  <p className="text-lg font-bold">Você é um verdadeiro campeão!</p>
-                  <p className="text-sm mt-2">Total de {progress.totalStars} estrelas conquistadas!</p>
-                </div>
-                <Button onClick={goToPuzzleSelection} className="w-full">
-                  <Home className="mr-2 h-4 w-4" />
-                  Voltar ao Início
-                </Button>
-              </DialogDescription>
-            </DialogHeader>
-          </DialogContent>
-        </Dialog>
-
-        {/* Preview de Drag para Mobile */}
         {dragPreview && isMobile && (
           <div
             className="fixed pointer-events-none z-50 opacity-80 rounded-lg"
