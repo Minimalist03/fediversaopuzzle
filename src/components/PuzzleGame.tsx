@@ -41,6 +41,7 @@ const PuzzleGame = () => {
   const [dragPreview, setDragPreview] = useState<{ x: number; y: number; piece: PuzzlePiece } | null>(null);
   const [difficulty, setDifficulty] = useState<DifficultyLevel>('medium');
   const [showDifficultySelector, setShowDifficultySelector] = useState(false);
+  const [currentGridSize, setCurrentGridSize] = useState(3);
   
   // Estados de responsividade
   const [isMobile, setIsMobile] = useState(false);
@@ -68,7 +69,6 @@ const PuzzleGame = () => {
   const { playSuccessSound, playPieceDropSound, playCompletionSound } = useSoundEffects();
 
   const currentPuzzle: PuzzleImageData = puzzleImages[currentPuzzleIndex];
-  const GRID_SIZE = DIFFICULTY_CONFIG[difficulty].gridSize;
 
   // Detecta tipo de dispositivo
   useEffect(() => {
@@ -91,13 +91,13 @@ const PuzzleGame = () => {
   // Timer
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (gameStarted && !isComplete) {
+    if (gameStarted && !isComplete && !showDifficultySelector) {
       interval = setInterval(() => {
         setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [gameStarted, isComplete, startTime]);
+  }, [gameStarted, isComplete, startTime, showDifficultySelector]);
 
   // Tamanhos otimizados por dispositivo e dificuldade
   const getPieceSize = () => {
@@ -105,49 +105,49 @@ const PuzzleGame = () => {
     const height = window.innerHeight;
     
     if (width <= 480) {
-      // Mobile: ajusta pelo grid size
       const padding = 48;
       const gaps = 16;
       const extraSpace = 250;
       
-      const maxWidth = Math.floor((width - padding - gaps) / (GRID_SIZE + 0.2));
-      const maxHeight = Math.floor((height - extraSpace) / (GRID_SIZE * 2 + 0.5));
+      const maxWidth = Math.floor((width - padding - gaps) / (currentGridSize + 0.2));
+      const maxHeight = Math.floor((height - extraSpace) / (currentGridSize * 2 + 0.5));
       const optimalSize = Math.min(maxWidth, maxHeight);
       
-      if (GRID_SIZE === 2) return Math.max(80, Math.min(100, optimalSize));
-      if (GRID_SIZE === 3) return Math.max(65, Math.min(80, optimalSize));
-      return Math.max(50, Math.min(65, optimalSize)); // 4x4
+      if (currentGridSize === 2) return Math.max(80, Math.min(100, optimalSize));
+      if (currentGridSize === 3) return Math.max(65, Math.min(80, optimalSize));
+      return Math.max(50, Math.min(65, optimalSize));
     }
     
     if (width < 768) {
-      if (GRID_SIZE === 2) return 110;
-      if (GRID_SIZE === 3) return 90;
+      if (currentGridSize === 2) return 110;
+      if (currentGridSize === 3) return 90;
       return 70;
     }
     
-    // Desktop
-    if (GRID_SIZE === 2) return 130;
-    if (GRID_SIZE === 3) return 100;
+    if (currentGridSize === 2) return 130;
+    if (currentGridSize === 3) return 100;
     return 80;
   };
 
   const pieceSize = getPieceSize();
 
-  // Formatar tempo
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Inicializa as peças do quebra-cabeça
-  const initializePuzzle = useCallback(() => {
+  // Inicializa as peças - CORRIGIDO
+  const initializePuzzle = useCallback((selectedDifficulty: DifficultyLevel) => {
+    const gridSize = DIFFICULTY_CONFIG[selectedDifficulty].gridSize;
+    setCurrentGridSize(gridSize);
+    
     const newPieces: PuzzlePiece[] = [];
     
-    for (let row = 0; row < GRID_SIZE; row++) {
-      for (let col = 0; col < GRID_SIZE; col++) {
+    for (let row = 0; row < gridSize; row++) {
+      for (let col = 0; col < gridSize; col++) {
         newPieces.push({
-          id: row * GRID_SIZE + col,
+          id: row * gridSize + col,
           row: row,
           col: col,
           correctPosition: { row, col },
@@ -165,12 +165,14 @@ const PuzzleGame = () => {
     setStartTime(Date.now());
     setElapsedTime(0);
     setMoves(0);
-  }, [GRID_SIZE]);
+  }, []);
 
   // Verifica se o quebra-cabeça está completo
   const checkCompletion = useCallback(() => {
+    if (pieces.length === 0) return;
+    
     const placedPieces = pieces.filter(piece => piece.isPlaced);
-    if (placedPieces.length === GRID_SIZE * GRID_SIZE) {
+    if (placedPieces.length === currentGridSize * currentGridSize) {
       const allCorrect = placedPieces.every(piece => 
         piece.row === piece.correctPosition.row && 
         piece.col === piece.correctPosition.col
@@ -180,7 +182,6 @@ const PuzzleGame = () => {
         setIsComplete(true);
         const timeSpent = Math.floor((Date.now() - startTime) / 1000);
         
-        // Bonus de estrelas por dificuldade
         const baseStars = savePuzzleCompletion(
           `puzzle-${currentPuzzleIndex}`, 
           timeSpent, 
@@ -198,13 +199,12 @@ const PuzzleGame = () => {
         }, 500);
       }
     }
-  }, [pieces, isComplete, startTime, moves, currentPuzzleIndex, savePuzzleCompletion, playCompletionSound, GRID_SIZE, difficulty]);
+  }, [pieces, isComplete, startTime, moves, currentPuzzleIndex, savePuzzleCompletion, playCompletionSound, currentGridSize, difficulty]);
 
   useEffect(() => {
     checkCompletion();
   }, [pieces, checkCompletion]);
 
-  // Handlers de drag (mantidos iguais ao original)
   const handleDragStart = (piece: PuzzlePiece) => {
     setDraggedPiece(piece);
     setIsDragging(true);
@@ -345,10 +345,10 @@ const PuzzleGame = () => {
     }
   };
 
-  const renderPuzzlePiece = (piece: PuzzlePiece, isInPalette = false) => {
+  const renderPuzzlePiece = (piece: PuzzlePiece) => {
     const style = {
       backgroundImage: `url(${currentPuzzle.image})`,
-      backgroundSize: `${pieceSize * GRID_SIZE}px ${pieceSize * GRID_SIZE}px`,
+      backgroundSize: `${pieceSize * currentGridSize}px ${pieceSize * currentGridSize}px`,
       backgroundPosition: `-${piece.correctPosition.col * pieceSize}px -${piece.correctPosition.row * pieceSize}px`,
       width: `${pieceSize}px`,
       height: `${pieceSize}px`,
@@ -420,8 +420,9 @@ const PuzzleGame = () => {
               <Button
                 key={key}
                 onClick={() => {
-                  setDifficulty(key as DifficultyLevel);
-                  initializePuzzle();
+                  const selectedDiff = key as DifficultyLevel;
+                  setDifficulty(selectedDiff);
+                  initializePuzzle(selectedDiff);
                 }}
                 className={`w-full h-20 text-lg ${config.color} hover:opacity-90`}
                 variant="default"
@@ -456,7 +457,7 @@ const PuzzleGame = () => {
     );
   }
 
-  // Tela de Boas-Vindas SIMPLIFICADA
+  // Tela de Boas-Vindas
   if (showWelcome) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-100 via-pink-50 to-blue-100 
@@ -532,7 +533,7 @@ const PuzzleGame = () => {
     );
   }
 
-  // Dashboard dos Pais (mantido igual ao original)
+  // Dashboard dos Pais
   if (showParentDashboard) {
     const stats = getStats();
     const formatTotalTime = (seconds: number) => {
@@ -610,7 +611,7 @@ const PuzzleGame = () => {
     );
   }
 
-  // Seleção de Puzzles (mantido igual)
+  // Seleção de Puzzles
   if (!gameStarted) {
     return (
       <div className="min-h-screen p-4 sm:p-6 bg-gradient-to-br from-background via-card to-secondary/20">
@@ -733,7 +734,7 @@ const PuzzleGame = () => {
     );
   }
 
-  // Tela do Jogo (igual ao original, apenas com indicador de dificuldade)
+  // Tela do Jogo
   return (
     <div className="min-h-screen p-4 sm:p-6 bg-gradient-to-br from-background via-card to-secondary/20">
       <div className="max-w-7xl mx-auto">
@@ -768,10 +769,10 @@ const PuzzleGame = () => {
             </h2>
             <div className="bg-yellow-50 p-2 rounded-lg">
               <div className={`grid gap-1`} style={{ 
-                gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)` 
+                gridTemplateColumns: `repeat(${currentGridSize}, 1fr)` 
               }}>
-                {Array.from({ length: GRID_SIZE }, (_, row) =>
-                  Array.from({ length: GRID_SIZE }, (_, col) =>
+                {Array.from({ length: currentGridSize }, (_, row) =>
+                  Array.from({ length: currentGridSize }, (_, col) =>
                     renderPuzzleSlot(row, col)
                   )
                 )}
@@ -785,7 +786,7 @@ const PuzzleGame = () => {
             </h3>
             <div className="bg-gray-50 rounded-lg p-2">
               <div className={`grid gap-1`} style={{ 
-                gridTemplateColumns: `repeat(${GRID_SIZE}, 1fr)` 
+                gridTemplateColumns: `repeat(${currentGridSize}, 1fr)` 
               }}>
                 {pieces.filter(p => !p.isPlaced).map(piece => (
                   <div key={piece.id} className="flex justify-center items-center">
@@ -793,7 +794,7 @@ const PuzzleGame = () => {
                   </div>
                 ))}
                 
-                {[...Array((GRID_SIZE * GRID_SIZE) - pieces.filter(p => !p.isPlaced).length)].map((_, i) => (
+                {[...Array((currentGridSize * currentGridSize) - pieces.filter(p => !p.isPlaced).length)].map((_, i) => (
                   <div 
                     key={`empty-${i}`} 
                     className="border-2 border-dashed border-gray-200 rounded-lg"
@@ -840,7 +841,6 @@ const PuzzleGame = () => {
           )}
         </div>
 
-        {/* Dialogs mantidos iguais */}
         <Dialog open={showCongratulations} onOpenChange={setShowCongratulations}>
           <DialogContent className="max-w-[90vw] sm:max-w-lg mx-auto my-4">
             <DialogHeader className="pb-2">
@@ -925,7 +925,7 @@ const PuzzleGame = () => {
               width: pieceSize,
               height: pieceSize,
               backgroundImage: `url(${currentPuzzle.image})`,
-              backgroundSize: `${pieceSize * GRID_SIZE}px ${pieceSize * GRID_SIZE}px`,
+              backgroundSize: `${pieceSize * currentGridSize}px ${pieceSize * currentGridSize}px`,
               backgroundPosition: `-${dragPreview.piece.correctPosition.col * pieceSize}px -${dragPreview.piece.correctPosition.row * pieceSize}px`,
               border: '2px solid hsl(var(--primary))',
               boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
